@@ -360,13 +360,12 @@ void test_openmp_simd_sum(unsigned int N)
   std::cout << "---> test_openmp_simd_sum(" << N <<" ) takes         " << ((t2 - t1)) << " RDTSC cycles" << std::endl;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-unsigned long long test_single_maxpool(int num_, int channels_, int width_, int height_, int kernel_w_, int kernel_h_, int stride_w_, int stride_h_ )
+void init_maxpool(std::vector<unsigned long>& top1 , std::vector<unsigned long>& top2 ,std::vector<unsigned long>&bottom, int num_, int channels_, int width_, int height_, int kernel_w_, int kernel_h_, int stride_w_, int stride_h_ )
 {
-
     assert(width_ >= kernel_w_);
     assert(height >= kernel_h_);
 
-    std::vector<unsigned long> bottom(num_*channels_*width_*height_);
+    bottom.resize(num_*channels_*width_*height_);
     
     //fill the array in with data 
     for(int i=0; i < num_*channels_*width_*height_; ++i)
@@ -379,7 +378,21 @@ unsigned long long test_single_maxpool(int num_, int channels_, int width_, int 
     int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
       width_ - kernel_w_) / stride_w_)) + 1;
 
-    std::vector<unsigned long> top(num_*channels_*pooled_width_*pooled_height_,(unsigned long)-1);
+    top1.resize(num_*channels_*pooled_width_*pooled_height_);
+    top2.resize(num_*channels_*pooled_width_*pooled_height_);
+}
+
+unsigned long long test_single_maxpool(std::vector<unsigned long>& top, std::vector<unsigned long>&bottom, int num_, int channels_, int width_, int height_, int kernel_w_, int kernel_h_, int stride_w_, int stride_h_ )
+{
+    // Clear Top buffer
+    for(auto& topek : top) {
+        topek = (unsigned long)-1; 
+    }
+    
+    int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+      height_ - kernel_h_) / stride_h_)) + 1;
+    int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+      width_ - kernel_w_) / stride_w_)) + 1;
 
     std::vector<int> top_mask_idx_(num_*channels_*pooled_width_*pooled_height_,-1);
     std::vector<int> mask_idx_(num_*channels_*pooled_width_*pooled_height_,-1);
@@ -437,25 +450,17 @@ unsigned long long test_single_maxpool(int num_, int channels_, int width_, int 
     return (t2 - t1);
 }
 
-unsigned long long test_openmp_maxpool(int num_, int channels_, int width_, int height_, int kernel_w_, int kernel_h_, int stride_w_, int stride_h_ )
+unsigned long long test_openmp_maxpool(std::vector<unsigned long>& top, std::vector<unsigned long>&bottom, int num_, int channels_, int width_, int height_, int kernel_w_, int kernel_h_, int stride_w_, int stride_h_ )
 {
-    assert(width_ >= kernel_w_);
-    assert(height >= kernel_h_);
-
-    std::vector<unsigned long> bottom(num_*channels_*width_*height_);
-    
-    //fill the array in with data 
-    for(int i=0; i < num_*channels_*width_*height_; ++i)
-    {
-        bottom[i] = i % 99; //pseudo random 
+    // Clear Top buffer
+    for(auto& topek : top) {
+        topek = (unsigned long)-1; 
     }
 
     int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
       height_ - kernel_h_) / stride_h_)) + 1;
     int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
       width_ - kernel_w_) / stride_w_)) + 1;
-
-    std::vector<unsigned long> top(num_*channels_*pooled_width_*pooled_height_,(unsigned int)-1);
 
     std::vector<int> top_mask_idx_(num_*channels_*pooled_width_*pooled_height_,-1);
     std::vector<int> mask_idx_(num_*channels_*pooled_width_*pooled_height_,-1);
@@ -565,8 +570,20 @@ int main()
     int stride_w_ = 2;
     int stride_h_ = 2;
 
-    auto openmp_res = test_openmp_maxpool(batch, channels, width, height, kernel_w_, kernel_h_ ,stride_w_, stride_h_ );
-    auto single_res = test_single_maxpool(batch, channels, width, height, kernel_w_, kernel_h_ ,stride_w_, stride_h_ );
+    std::vector<unsigned long> top1;
+    std::vector<unsigned long> top2;
+    std::vector<unsigned long> bottom;
+
+    init_maxpool(top1,top2, bottom, batch, channels, width, height, kernel_w_, kernel_h_ ,stride_w_, stride_h_ );
+    auto openmp_res = test_openmp_maxpool(top1, bottom, batch, channels, width, height, kernel_w_, kernel_h_ ,stride_w_, stride_h_ );
+    auto single_res = test_single_maxpool(top2, bottom, batch, channels, width, height, kernel_w_, kernel_h_ ,stride_w_, stride_h_ );
+
+    if(std::equal(top1.begin(),top1.end(),top2.begin()) == false)
+    {
+        printf("BLAD porownania!\n");
+        exit(-1);
+    }
+  
     printf("batch=%d channels=%d width=%d height=%d kernel_width=%d kernel_height=%d stride_w_=%d stride_h_=%d single_time=%llu openmp_time=%llu ratio(openmp/single)=%f ",
             batch,channels,width,height,kernel_w_,kernel_h_,stride_w_,stride_h_,single_res,openmp_res, (openmp_res/(float)single_res));
     if(openmp_res <= single_res) {

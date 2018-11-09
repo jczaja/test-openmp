@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(test-openmp)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CheckCXXCompilerFlag)
 
 find_package(OpenMP)
 if(OPENMP_FOUND)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -v")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 else()
 message("OpenMP support missing in compiler")
@@ -21,13 +21,12 @@ add_definitions(-std=c++0x)
 endif()
 endif()
 
-#add_definitions(-finstrument-functions-exclude-function-list=__cyg_profile_func_enter,__cyg_profile_func_exit)
-#add_definitions(-finstrument-functions)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-
-#add_definitions(-fopt-info-vec-missed)
-#add_definitions(-fopt-info-vec-optimized)
 add_definitions(-Wall)
+#add_definitions(-S -masm=intel)
+
 #add_executable(test-openmp main.cpp trace.cpp)
-add_executable(test-openmp main.cpp) 
-#set_target_properties(test-openmp PROPERTIES COMPILE_FLAGS "-pg" LINK_FLAGS "-pg" )
+add_executable(test-openmp-gomp main.cpp) 
+#add_executable(test-openmp-iomp5 main.cpp) 
+#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 -L/home/jczaja/test-openmp)
+#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 )
+#set_target_properties(test-openmp-iomp5 PROPERTIES LINK_FLAGS -Wl,--as-needed)

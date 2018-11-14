@@ -21,12 +21,59 @@ add_definitions(-std=c++0x)
 endif()
 endif()
 
-add_definitions(-Wall)
-#add_definitions(-S -masm=intel)
+# ---[ Root folders
+set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
+find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} $ENV{MKL_ROOT} ${INTEL_ROOT}/mkl
+                                   DOC "Folder contains MKL")
+
+# ---[ Find include dir
+find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
+
+find_library(MKL_INTEL_THREAD_LIBRARY
+        NAMES libmkl_intel_thread mkl_intel_thread
+        PATHS ${MKL_ROOT}/lib/intel64 )
+list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
+
+find_library(MKL_CORE_LIBRARY
+        NAMES libmkl_core mkl_core
+        PATHS ${MKL_ROOT}/lib/intel64 )
+list(APPEND MKL_LIBRARIES ${MKL_CORE_LIBRARY})
+
+find_library(MKL_ILP_LIBRARY
+        NAMES mkl_intel_ilp64
+        PATHS ${MKL_ROOT}/lib/intel64 )
+list(APPEND MKL_LIBRARIES ${MKL_ILP_LIBRARY})
+
+
+if(MKL_ROOT)
+  message(STATUS "Found MKL (include: ${MKL_INCLUDE_DIR}, lib: ${MKL_LIBRARIES}")
+  include_directories(${MKL_INCLUDE_DIR})
+else()
+  message(FATAL "Intel MKL not located properly")
+endif()
+
+add_definitions(-Wall -mavx)
+#add_definitions(-Wall)
+if(GENERATE_ASSEMBLY)
+add_definitions(-DGENERATE_ASSEMBLY)
+add_definitions(-S -masm=intel)
+add_definitions(-fopt-info-vec-optimized)
+#add_definitions(-fopt-info-vec-missed)
+add_library(assembly_dump main.cpp)
+set_target_properties(assembly_dump PROPERTIES PREFIX "")
+set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "code.asm")
+set_target_properties(assembly_dump PROPERTIES SUFFIX "")
+else()
+add_executable(test-openmp-gomp main.cpp) 
+target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m )
+endif()
 
 #add_executable(test-openmp main.cpp trace.cpp)
-add_executable(test-openmp-gomp main.cpp) 
 #add_executable(test-openmp-iomp5 main.cpp) 
 #target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 -L/home/jczaja/test-openmp)
 #target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 )
 #set_target_properties(test-openmp-iomp5 PROPERTIES LINK_FLAGS -Wl,--as-needed)
+
+
+
+

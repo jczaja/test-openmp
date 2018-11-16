@@ -134,10 +134,11 @@ void simd_softmax(const float* X,
     }
 }
 
-#pragma omp declare simd uniform(num_classes)
-float simd_sum(float* tmpptr, int num_classes)
+#pragma omp declare simd uniform(ptr,num_classes) linear(n:1)
+float simd2_sum(float* ptr, int n, int num_classes)
 {
    float result = 0.0f;
+    float* tmpptr = ptr + n*num_classes;
    for (int c=0; c < num_classes; ++c) {
      result += tmpptr[c];
    }
@@ -174,9 +175,8 @@ void simd2_softmax(const float* X,
 #     endif
     #pragma omp simd
     for (int n=0; n < batch_size; ++n) {
-      float* tmpptr = &out_data[n*num_classes];
       //#pragma omp simd reduction(+: result) aligned(tmpptr)
-      entities[n] = simd_sum(tmpptr,num_classes); 
+      entities[n] = simd2_sum(&out_data[0],n,num_classes); 
     }
 #   ifdef GENERATE_ASSEMBLY
     asm volatile ("END SIMD2 <---");

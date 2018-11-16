@@ -87,6 +87,9 @@ void seq_softmax(const float* X,
     }
 }
 
+
+
+
 void simd_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
 
@@ -97,7 +100,8 @@ void simd_softmax(const float* X,
     for (int n=0; n < batch_size; ++n) {
       auto result = in_data[n*num_classes];
       const float* tmpptr = &in_data[n*num_classes];
-      #pragma omp simd reduction(max: result) aligned(tmpptr)
+      //#pragma omp simd reduction(max: result) aligned(tmpptr)
+      #pragma omp simd reduction(max: result)
       for (int c=0; c < num_classes; ++c) {
         if (tmpptr[c] > result) {
           result = tmpptr[c];
@@ -117,7 +121,8 @@ void simd_softmax(const float* X,
       asm volatile ("BEGIN SIMD! <---");
 #     endif
       float* tmpptr = &out_data[n*num_classes];
-      #pragma omp simd reduction(+: result) aligned(tmpptr)
+      //#pragma omp simd reduction(+: result) aligned(tmpptr)
+      #pragma omp simd reduction(+: result)
       for (int c=0; c < num_classes; ++c) {
         result += tmpptr[c];
       }
@@ -128,6 +133,59 @@ void simd_softmax(const float* X,
       cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
     }
 }
+
+#pragma omp declare simd uniform(num_classes)
+float simd_sum(float* tmpptr, int num_classes)
+{
+   float result = 0.0f;
+   for (int c=0; c < num_classes; ++c) {
+     result += tmpptr[c];
+   }
+  return result;
+}
+
+void simd2_softmax(const float* X,
+                  float* Y, const int batch_size, const int num_classes) {
+
+    const float* in_data = X;
+    float* out_data = Y;
+    // 2D data. Batch x C
+    std::vector<float> entities(batch_size);
+    for (int n=0; n < batch_size; ++n) {
+      auto result = in_data[n*num_classes];
+      const float* tmpptr = &in_data[n*num_classes];
+      //#pragma omp simd reduction(max: result) aligned(tmpptr)
+      #pragma omp simd reduction(max: result)
+      for (int c=0; c < num_classes; ++c) {
+        if (tmpptr[c] > result) {
+          result = tmpptr[c];
+        }
+      }
+      entities[n] = result; 
+
+      for (int c=0; c < num_classes; ++c) {
+        out_data[n*num_classes+c] = in_data[n*num_classes+c] - entities[n];
+      }
+    }
+    vsExp(num_classes*batch_size, out_data, out_data);
+
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("BEGIN SIMD2 <---");
+#     endif
+    #pragma omp simd
+    for (int n=0; n < batch_size; ++n) {
+      float* tmpptr = &out_data[n*num_classes];
+      //#pragma omp simd reduction(+: result) aligned(tmpptr)
+      entities[n] = simd_sum(tmpptr,num_classes); 
+    }
+#   ifdef GENERATE_ASSEMBLY
+    asm volatile ("END SIMD2 <---");
+#   endif
+    for (int n=0; n < batch_size; ++n) {
+      cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
+    }
+}
+
 
 int main()
 {
@@ -152,30 +210,53 @@ int main()
       bottom_uns[i] = (float)i/bottom_uns.size() + 2.0f;
     }
     
-    //run_tasks(top_uns,bottom_uns);
     float sumseq = 0.0f;
     float sumsimd = 0.0f;
+    float sumsimd2 = 0.0f;
+
+    const int batch_size = 300;
+    const int num_classes = 50;
+
 
     unsigned long long  t1;
+    
+    // Warmup eg. does not account
+    for (int n=0; n < num_reps; ++n) {
+//      seq_sum(sumseq,bottom_uns);
+      seq_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+    }
+
+    t1 = __rdtsc();
+    for (int n=0; n < num_reps; ++n) {
+      simd2_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+    }
+    auto simd2t = __rdtsc() - t1;
 
     t1 = __rdtsc();
     for (int n=0; n < num_reps; ++n) {
 //      simd_sum(sumsimd,bottom_uns);
-      simd_softmax(&bottom_uns[0], &top[0],50,500); 
+      simd_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
     }
     auto simdt = __rdtsc() - t1;
+
 
     t1 = __rdtsc();
     for (int n=0; n < num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(&bottom_uns[0], &top[0],50,500); 
+      seq_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
     }
     auto seqt = __rdtsc() - t1;
 
 
-    std::cout << "SUM SEQ = " << sumseq << std::endl;
-    std::cout << "SUM SIMD = " << sumsimd << std::endl;
-    std::cout << "OMP SIMD Reduction is :" << simdt/(float)seqt << " of sequence time" << std::endl;
 
+
+
+//    std::cout << "Softmax SEQ = " << sumseq << std::endl;
+//    std::cout << "softmax SIMD = " << sumsimd << std::endl;
+    std::cout << "softmax SIMD is :" << simdt/(float)seqt << " of sequence time" << std::endl;
+
+//    std::cout << "Softmax SEQ = " << sumseq << std::endl;
+//    std::cout << "softmax SIMD2 = " << sumsimd2 << std::endl;
+    std::cout << "softmax SIMD2 is :" << simd2t/(float)seqt << " of sequence time" << std::endl;
 	return 0;
 }

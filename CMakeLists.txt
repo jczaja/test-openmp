@@ -29,20 +29,21 @@ find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} $ENV{MKL_ROOT} ${INTEL_ROOT
 # ---[ Find include dir
 find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
 
-find_library(MKL_INTEL_THREAD_LIBRARY
-        NAMES libmkl_intel_thread mkl_intel_thread
+find_library(MKL_ILP_LIBRARY
+        NAMES mkl_intel_ilp64
         PATHS ${MKL_ROOT}/lib/intel64 )
-list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
-
+list(APPEND MKL_LIBRARIES ${MKL_ILP_LIBRARY})
 find_library(MKL_CORE_LIBRARY
         NAMES libmkl_core mkl_core
         PATHS ${MKL_ROOT}/lib/intel64 )
 list(APPEND MKL_LIBRARIES ${MKL_CORE_LIBRARY})
 
-find_library(MKL_ILP_LIBRARY
-        NAMES mkl_intel_ilp64
+find_library(MKL_INTEL_THREAD_LIBRARY
+        NAMES libmkl_gnu_thread mkl_gnu_thread
         PATHS ${MKL_ROOT}/lib/intel64 )
-list(APPEND MKL_LIBRARIES ${MKL_ILP_LIBRARY})
+list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
+
+
 
 
 if(MKL_ROOT)

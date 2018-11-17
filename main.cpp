@@ -145,6 +145,25 @@ float simd2_sum(float* ptr, int n, int num_classes)
   return result;
 }
 
+#pragma omp declare simd uniform(out_ptr,in_ptr,num_classes) linear(n:1)
+void simd2_max(float* out_ptr, const float* in_ptr, int n, int num_classes)
+{
+    const float* tmpptr = in_ptr + n*num_classes;
+    float max = tmpptr[0];
+     for (int c=0; c < num_classes; ++c) {
+       if (tmpptr[c] > max) {
+         max = tmpptr[c];
+       }
+     }
+     float* tmpptr_out = out_ptr + n*num_classes;
+
+     for (int c=0; c < num_classes; ++c) {
+       tmpptr_out[c] = tmpptr[c] - max;
+     }
+}
+
+
+
 void simd2_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
 
@@ -152,22 +171,16 @@ void simd2_softmax(const float* X,
     float* out_data = Y;
     // 2D data. Batch x C
     std::vector<float> entities(batch_size);
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("BEGIN SIMD2-MAX <---");
+#     endif
+    #pragma omp simd
     for (int n=0; n < batch_size; ++n) {
-      auto result = in_data[n*num_classes];
-      const float* tmpptr = &in_data[n*num_classes];
-      //#pragma omp simd reduction(max: result) aligned(tmpptr)
-      #pragma omp simd reduction(max: result)
-      for (int c=0; c < num_classes; ++c) {
-        if (tmpptr[c] > result) {
-          result = tmpptr[c];
-        }
-      }
-      entities[n] = result; 
-
-      for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - entities[n];
-      }
+      simd2_max(&out_data[0],&in_data[0],n,num_classes); 
     }
+#   ifdef GENERATE_ASSEMBLY
+    asm volatile ("END SIMD2-MAX <---");
+#   endif
     vsExp(num_classes*batch_size, out_data, out_data);
 
 #     ifdef GENERATE_ASSEMBLY
@@ -201,7 +214,7 @@ int main()
     //float myarray[num_elements];
     //float outarray[num_elements];
     //for_add_openmp2(num_elements,myarray,outarray);
-    const int num_reps = 100000;
+    const int num_reps = 1000000;
 
 
     std::vector<float> bottom_uns(100000);
@@ -214,7 +227,7 @@ int main()
     float sumsimd = 0.0f;
     float sumsimd2 = 0.0f;
 
-    const int batch_size = 300;
+    const int batch_size = 50;
     const int num_classes = 50;
 
 

@@ -145,8 +145,8 @@ float simd2_sum(float* ptr, int n, int num_classes)
   return result;
 }
 
-#pragma omp declare simd uniform(out_ptr,in_ptr,num_classes) linear(n:1)
-void simd2_max(float* out_ptr, const float* in_ptr, int n, int num_classes)
+#pragma omp declare simd uniform(in_ptr,num_classes) linear(n:1)
+float simd2_max(const float* in_ptr, int n, int num_classes)
 {
     const float* tmpptr = in_ptr + n*num_classes;
     float max = tmpptr[0];
@@ -155,14 +155,20 @@ void simd2_max(float* out_ptr, const float* in_ptr, int n, int num_classes)
          max = tmpptr[c];
        }
      }
+     return max;
+}
+
+
+#pragma omp declare simd uniform(out_ptr,in_ptr,num_classes) linear(n:1)
+void simd2_sub(float* out_ptr, const float* in_ptr, int n, int num_classes,float max)
+{
      float* tmpptr_out = out_ptr + n*num_classes;
+     const float* tmpptr = in_ptr + n*num_classes;
 
      for (int c=0; c < num_classes; ++c) {
        tmpptr_out[c] = tmpptr[c] - max;
      }
 }
-
-
 
 void simd2_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
@@ -176,7 +182,8 @@ void simd2_softmax(const float* X,
 #     endif
     #pragma omp simd
     for (int n=0; n < batch_size; ++n) {
-      simd2_max(&out_data[0],&in_data[0],n,num_classes); 
+      auto max = simd2_max(&in_data[0],n,num_classes); 
+      simd2_sub(&out_data[0],&in_data[0],n,num_classes,max); 
     }
 #   ifdef GENERATE_ASSEMBLY
     asm volatile ("END SIMD2-MAX <---");

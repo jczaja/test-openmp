@@ -107,10 +107,9 @@ void simd_softmax(const float* X,
           result = tmpptr[c];
         }
       }
-      entities[n] = result; 
 
       for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - entities[n];
+        out_data[n*num_classes+c] = in_data[n*num_classes+c] - result;
       }
     }
     vsExp(num_classes*batch_size, out_data, out_data);
@@ -162,10 +161,9 @@ void simd2_softmax(const float* X,
           result = tmpptr[c];
         }
       }
-      entities[n] = result; 
 
       for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - entities[n];
+        out_data[n*num_classes+c] = in_data[n*num_classes+c] - result;
       }
     }
     vsExp(num_classes*batch_size, out_data, out_data);

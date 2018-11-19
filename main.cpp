@@ -133,7 +133,7 @@ void simd_softmax(const float* X,
     }
 }
 
-#pragma omp declare simd uniform(ptr,num_classes) linear(n:1)
+#pragma omp declare simd uniform(ptr,num_classes) linear(n:1) notinbranch aligned(ptr:32)
 float simd2_sum(float* ptr, int n, int num_classes)
 {
    float result = 0.0f;
@@ -155,7 +155,7 @@ void simd2_softmax(const float* X,
       auto result = in_data[n*num_classes];
       const float* tmpptr = &in_data[n*num_classes];
       //#pragma omp simd reduction(max: result) aligned(tmpptr)
-      #pragma omp simd reduction(max: result)
+      #pragma omp simd reduction(max: result) aligned(tmpptr:32)
       for (int c=0; c < num_classes; ++c) {
         if (tmpptr[c] > result) {
           result = tmpptr[c];
@@ -189,11 +189,6 @@ int main()
 {
 	//printf("Hello OpenMP World!. Thread limit: %d\n",omp_get_thread_limit());
 
-    int liczba_int = int();
-    float liczba_float = float();
-
-    printf("Liczba_float: %f liczba_int %d\n",liczba_float, liczba_int);
-
     //const int num_elements = 1000;
 
     //float myarray[num_elements];
@@ -201,13 +196,27 @@ int main()
     //for_add_openmp2(num_elements,myarray,outarray);
     const int num_reps = 100000;
 
-
-    std::vector<float> bottom_uns(100000);
-    std::vector<float> top(100000,0);
-    for(size_t i=0; i<bottom_uns.size(); ++i) {
-      bottom_uns[i] = (float)i/bottom_uns.size() + 2.0f;
+    const int sized = 100000;
+    float *bottom_uns, *top;
+    
+    int ret = posix_memalign((void**)&bottom_uns,32,sized*sizeof(float));
+    if (ret != 0) {
+      std::cout << "Allocation error of bottom!" << std::endl;
+      exit(-1);
+    }
+    ret = posix_memalign((void**)&top,32,sized*sizeof(float));
+    if (ret != 0) {
+      std::cout << "Allocation error of top!" << std::endl;
+      exit(-1);
     }
     
+    for(size_t i=0; i<sized; ++i) {
+      bottom_uns[i] = (float)i/sized + 2.0f;
+      top[i] = 0.0f;
+    }
+    
+
+    std::cout << "Hello SIMD openmp!" << std::endl;
     float sumseq = 0.0f;
     float sumsimd = 0.0f;
     float sumsimd2 = 0.0f;
@@ -221,7 +230,7 @@ int main()
     // Warmup eg. does not account
     for (int n=0; n < num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+      seq_softmax(bottom_uns, top,batch_size,num_classes); 
     }
 
     t1 = __rdtsc();
@@ -246,9 +255,12 @@ int main()
     auto seqt = __rdtsc() - t1;
 
 
+    free(bottom_uns);
+    free(top);
 
 
 
+    std::cout << "softmax SEQ is : " << seqt/((float)2.5*1000000.0) << " ms" << std::endl;
 //    std::cout << "Softmax SEQ = " << sumseq << std::endl;
 //    std::cout << "softmax SIMD = " << sumsimd << std::endl;
     std::cout << "softmax SIMD is :" << simdt/(float)seqt << " of sequence time" << std::endl;

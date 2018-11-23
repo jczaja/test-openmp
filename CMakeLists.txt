@@ -7,6 +7,24 @@ find_package(OpenMP)
 if(OPENMP_FOUND)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -v")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(OpenMP_SIMD_Test_Source
+" int main()
+{
+  const int asize = 8;
+  int a[asize] = {1,2,3,4,5,6,7,8};
+  int sum = a[0];
+# pragma omp simd reduction(+:sum)
+  for (int i=1; i<asize; ++i) {
+		sum += a[i];
+	}
+  return 0;
+}")
+file(WRITE ${CMAKE_BINARY_DIR}/test_openmp.cpp "${OpenMP_SIMD_Test_Source}")
+try_compile(COMPILE_SUCCEEDED ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_openmp.cpp COMPILE_DEFINITIONS "-fopenmp -Werror -Wunknown-pragmas")
+
+if(COMPILE_SUCCEEDED)
+  message("OpenMP SIMD present")
+endif()
 else()
 message("OpenMP support missing in compiler")
 endif()

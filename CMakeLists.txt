@@ -47,6 +47,13 @@ find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} $ENV{MKL_ROOT} ${INTEL_ROOT
 # ---[ Find include dir
 find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
 
+set(MKL_LIBRARIES "")
+
+
+
+
+
+if(MKL_ROOT)
 find_library(MKL_ILP_LIBRARY
         NAMES mkl_intel_ilp64
         PATHS ${MKL_ROOT}/lib/intel64 )
@@ -60,19 +67,13 @@ find_library(MKL_INTEL_THREAD_LIBRARY
         NAMES libmkl_gnu_thread mkl_gnu_thread
         PATHS ${MKL_ROOT}/lib/intel64 )
 list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
-
-
-
-
-if(MKL_ROOT)
   message(STATUS "Found MKL (include: ${MKL_INCLUDE_DIR}, lib: ${MKL_LIBRARIES}")
   include_directories(${MKL_INCLUDE_DIR})
-else()
-  message(FATAL "Intel MKL not located properly")
+	add_definitions(-DUSE_MKL)
 endif()
 
 add_definitions(-Wall -mavx)
-#add_definitions(-fopt-info-vec-missed)
+add_definitions(-fopt-info-vec-optimized)
 add_library(assembly_dump main.cpp)
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
@@ -88,7 +89,3 @@ target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m )
 #target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 -L/home/jczaja/test-openmp)
 #target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 )
 #set_target_properties(test-openmp-iomp5 PROPERTIES LINK_FLAGS -Wl,--as-needed)
-
-
-
-

@@ -20,7 +20,50 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
+#ifdef USE_MKL
 #include "mkl.h"
+#endif
+
+
+void seq_max(float& result, const float* X, int num_classes)
+{
+# ifdef GENERATE_ASSEMBLY
+  asm volatile ("BEGIN MAX SEQUENCE! <---");
+# endif
+  result = X[0];
+	for (int c=0; c < num_classes; ++c) {
+		if (X[c] > result) {
+			result = X[c];
+		}
+	}
+# ifdef GENERATE_ASSEMBLY
+  asm volatile ("END MAX SEQUENCE! <---");
+# endif
+}
+
+void simd_max(float& result, const float* X, int num_classes)
+{
+# ifdef GENERATE_ASSEMBLY
+  asm volatile ("BEGIN MAX SIMD! <---");
+# endif
+  result = X[0];
+	#pragma omp simd reduction(max: result) aligned(X : 32)
+	for (int c=0; c < num_classes; ++c) {
+		if (X[c] > result) {
+			result = X[c];
+		}
+	}
+# ifdef GENERATE_ASSEMBLY
+  asm volatile ("END MAX SIMD! <---");
+# endif
+}
+
+void xbyak_max(float& result, std::vector<float>&bottom)
+{
+
+}
+
+
 
 void seq_sum(float& result, std::vector<float>&bottom)
 {
@@ -45,6 +88,8 @@ void simd_sum(float& result, std::vector<float>&bottom)
 //    asm volatile ("END SIMD! <---");
 }
 
+
+#ifdef USE_MKL
 void seq_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
 
@@ -86,10 +131,12 @@ void seq_softmax(const float* X,
       cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
     }
 }
+#endif
 
 
 
 
+#ifdef USE_MKL
 void simd_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
 
@@ -132,6 +179,7 @@ void simd_softmax(const float* X,
       cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
     }
 }
+#endif
 
 #pragma omp declare simd uniform(ptr,num_classes) linear(n:1) notinbranch aligned(ptr:32)
 float simd2_sum(float* ptr, int n, int num_classes)
@@ -144,6 +192,8 @@ float simd2_sum(float* ptr, int n, int num_classes)
   return result;
 }
 
+
+#ifdef USE_MKL
 void simd2_softmax(const float* X,
                   float* Y, const int batch_size, const int num_classes) {
 
@@ -183,7 +233,7 @@ void simd2_softmax(const float* X,
       cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
     }
 }
-
+#endif
 
 int main()
 {
@@ -194,9 +244,9 @@ int main()
     //float myarray[num_elements];
     //float outarray[num_elements];
     //for_add_openmp2(num_elements,myarray,outarray);
-    const int num_reps = 100000;
+    const int num_reps = 1000000;
 
-    const int sized = 100000;
+    const int sized = 1000000;
     float *bottom_uns, *top;
     
     int ret = posix_memalign((void**)&bottom_uns,32,sized*sizeof(float));
@@ -222,11 +272,12 @@ int main()
     float sumsimd2 = 0.0f;
 
     const int batch_size = 300;
-    const int num_classes = 50;
+    const int num_classes = 1000;
 
 
     unsigned long long  t1;
     
+#ifdef USE_MKL
     // Warmup eg. does not account
     for (int n=0; n < num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
@@ -254,12 +305,6 @@ int main()
     }
     auto seqt = __rdtsc() - t1;
 
-
-    free(bottom_uns);
-    free(top);
-
-
-
     std::cout << "softmax SEQ is : " << seqt/((float)2.5*1000000.0) << " ms" << std::endl;
 //    std::cout << "Softmax SEQ = " << sumseq << std::endl;
 //    std::cout << "softmax SIMD = " << sumsimd << std::endl;
@@ -268,5 +313,36 @@ int main()
 //    std::cout << "Softmax SEQ = " << sumseq << std::endl;
 //    std::cout << "softmax SIMD2 = " << sumsimd2 << std::endl;
     std::cout << "softmax SIMD2 is :" << simd2t/(float)seqt << " of sequence time" << std::endl;
+#endif
+
+
+    // Warmup eg. does not account
+    float result1,result2;
+
+		seq_max(result1,bottom_uns,num_classes); 
+		
+
+    t1 = __rdtsc();
+    for (int n=0; n < num_reps; ++n) {
+      simd_max(result2,bottom_uns,num_classes); 
+    }
+    auto simd_t = __rdtsc() - t1;
+
+    t1 = __rdtsc();
+    for (int n=0; n < num_reps; ++n) {
+      seq_max(result1,bottom_uns,num_classes); 
+    }
+    auto seq_t = __rdtsc() - t1;
+
+		std::cout << "max SEQ = " << result1 << std::endl;
+		std::cout << "max SIMD = " << result2 << std::endl;
+    std::cout << "max SEQ is : " << seq_t/((float)2.5*1000000.0) << " ms" << std::endl;
+    std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
+
+    free(bottom_uns);
+    free(top);
+
+
+
 	return 0;
 }

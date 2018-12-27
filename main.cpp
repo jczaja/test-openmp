@@ -23,7 +23,8 @@
 #ifdef USE_MKL
 #include "mkl.h"
 #endif
-
+#include "xbyak/xbyak.h"
+#include "xbyak/xbyak_util.h"
 
 void seq_max(float& result, const float* X, int num_classes)
 {

@@ -3,6 +3,9 @@ project(test-openmp)
 
 include(CheckCXXCompilerFlag)
 
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/xbyak")
+add_definitions(-fno-operator-names)
+
 find_package(OpenMP)
 if(OPENMP_FOUND)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -v")
@@ -81,7 +84,7 @@ set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 
-add_executable(test-openmp-gomp main.cpp) 
+add_executable(test-openmp-gomp main.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m )
 
 #add_executable(test-openmp main.cpp trace.cpp)

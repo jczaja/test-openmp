@@ -25,6 +25,66 @@
 #endif
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
+/////////////////////////////////////////
+// We can assume that matrix dimensions are divisible by 8
+struct maxFunc : public Xbyak::CodeGenerator {
+    maxFunc()
+{
+#if defined(__x86_64__)
+// calling convention RDI, RSI, RDX, RCX, R8, R9
+// XMM0-7 (ints are passed that way)
+//      RDI - Reference to Result
+//      RSI - PTR to Array
+//      RDX - Num classes 
+
+// Regsters that need to be preserved: RBX,RBP, R12-R15
+
+  Xbyak::util::Cpu current_cpu;
+  if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
+    printf("AVX2 supported!\n");
+  } else {
+    printf("AVX2 not detected!\n");
+  }
+
+  mov (rcx,rdx);	
+  push(rbx);
+  shr (rcx,3);  // Divide by 8 (eight floats)
+  shl (rdx,2);  // num of Output elements * size of float (4)
+  shl (rcx,5);  // Trunc to 32 bytes 
+
+
+	// Compute partial maximums
+  vpbroadcastd(ymm0,ptr [rsi]);
+  xor(rax,rax);				// Move offset for next 8 floating point values
+  L("for_i");
+    cmp(rax,rcx);
+    jz("tail");
+    vmovaps(ymm1,ptr [rsi + rax]);  // A
+		add(rax,32);				// Move offset for next 8 floating point values
+		vmaxps(ymm0,ymm0,ymm1);
+    jmp("for_i");
+  L("tail");
+  // Tail execution
+  // TODO: tail
+  // Get within shortlisted buffer maximum
+	vperm2f128(ymm1,ymm0,ymm0,1);
+  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
+  vpermilps(xmm1,xmm0,0x1B);
+  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
+  vpermilps(xmm1,xmm0,1);
+  vmaxps(ymm0,ymm0,ymm1);  //ymm0[0:31] contains global maximum
+  vmovss(ptr[rdi],xmm0); // Result <-Max(X[.])
+  pop(rbx);
+
+  printf("Generating Max Value code\n");
+#else
+        printf("32bit not supported\n");
+#endif
+  ret();
+}
+};
+////////////////////////
+
 
 void seq_max(float& result, const float* X, int num_classes)
 {
@@ -263,6 +323,7 @@ int main()
     
     for(size_t i=0; i<sized; ++i) {
       bottom_uns[i] = (float)i/sized + 2.0f;
+      //bottom_uns[i] = (float)i;
       top[i] = 0.0f;
     }
     
@@ -307,21 +368,18 @@ int main()
     auto seqt = __rdtsc() - t1;
 
     std::cout << "softmax SEQ is : " << seqt/((float)2.5*1000000.0) << " ms" << std::endl;
-//    std::cout << "Softmax SEQ = " << sumseq << std::endl;
-//    std::cout << "softmax SIMD = " << sumsimd << std::endl;
     std::cout << "softmax SIMD is :" << simdt/(float)seqt << " of sequence time" << std::endl;
-
-//    std::cout << "Softmax SEQ = " << sumseq << std::endl;
-//    std::cout << "softmax SIMD2 = " << sumsimd2 << std::endl;
     std::cout << "softmax SIMD2 is :" << simd2t/(float)seqt << " of sequence time" << std::endl;
 #endif
 
 
     // Warmup eg. does not account
-    float result1,result2;
+    float result1,result2,result3;
+
+    maxFunc max_func;
+		auto max_kernel = (void (*)(float& result, const float *x, int m))max_func.getCode();
 
 		seq_max(result1,bottom_uns,num_classes); 
-		
 
     t1 = __rdtsc();
     for (int n=0; n < num_reps; ++n) {
@@ -331,19 +389,26 @@ int main()
 
     t1 = __rdtsc();
     for (int n=0; n < num_reps; ++n) {
+      max_kernel(result3,bottom_uns,num_classes); 
+    }
+    auto asm_t = __rdtsc() - t1;
+
+
+    t1 = __rdtsc();
+    for (int n=0; n < num_reps; ++n) {
       seq_max(result1,bottom_uns,num_classes); 
     }
     auto seq_t = __rdtsc() - t1;
 
 		std::cout << "max SEQ = " << result1 << std::endl;
 		std::cout << "max SIMD = " << result2 << std::endl;
-    std::cout << "max SEQ is : " << seq_t/((float)2.5*1000000.0) << " ms" << std::endl;
+		std::cout << "max ASM = " << result3 << std::endl;
+    std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
     std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
+    std::cout << "max ASM is :" << asm_t/(float)seq_t << " of sequence time" << std::endl;
 
     free(bottom_uns);
     free(top);
-
-
 
 	return 0;
 }

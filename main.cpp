@@ -63,9 +63,25 @@ struct maxFunc : public Xbyak::CodeGenerator {
 		add(rax,32);				// Move offset for next 8 floating point values
 		vmaxps(ymm0,ymm0,ymm1);
     jmp("for_i");
-  L("tail");
   // Tail execution
-  // TODO: tail
+  L("tail");
+    sub(rdx,rcx);
+    cmp(rdx,16);  
+    jb("seq");
+    vmovaps(xmm2,ptr [rsi + rax]);  // A
+		add(rax,16);				// Move offset for next 4 floating point values
+    sub(rdx,16);
+		vperm2f128(ymm2,ymm2,ymm2,0);
+		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
+  L("seq");
+	  cmp(rdx,0);
+    jz("done");	
+		vpbroadcastd(ymm2,ptr [rsi + rax]);
+		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
+    sub(rdx,4);
+    add(rax,4);
+    jmp("seq");
+  L("done");
   // Get within shortlisted buffer maximum
 	vperm2f128(ymm1,ymm0,ymm0,1);
   vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
@@ -322,7 +338,7 @@ int main()
     }
     
     for(size_t i=0; i<sized; ++i) {
-      bottom_uns[i] = (float)i/sized + 2.0f;
+      bottom_uns[i] = (float)i/sized + powf(-1.0f,(float)i)*2.0f;
       //bottom_uns[i] = (float)i;
       top[i] = 0.0f;
     }
@@ -334,7 +350,7 @@ int main()
     float sumsimd2 = 0.0f;
 
     const int batch_size = 300;
-    const int num_classes = 1000;
+    const int num_classes = 1007;
 
 
     unsigned long long  t1;

@@ -6,6 +6,13 @@ include(CheckCXXCompilerFlag)
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/xbyak")
 add_definitions(-fno-operator-names)
 
+# GFLAGS
+find_library(GFLAGS_LIB NAMES gflags)
+find_path(GFLAGS_INCLUDES NAMES gflags.h PATHS /usr/include/gflags/)
+message("GFLAGS INCLUDES: ${GFLAGS_INCLUDES}")
+include_directories(SYSTEM ${GFLAGS_INCLUDES})
+
+
 find_package(OpenMP)
 if(OPENMP_FOUND)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -v")
@@ -83,9 +90,8 @@ set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
 set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
-
 add_executable(test-openmp-gomp main.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m )
+target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m ${GFLAGS_LIB})
 
 #add_executable(test-openmp main.cpp trace.cpp)
 #add_executable(test-openmp-iomp5 main.cpp) 

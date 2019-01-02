@@ -14,7 +14,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <sys/types.h>
-
+#include "gflags/gflags.h"
 
 #include <string>
 #include <fstream>
@@ -25,6 +25,14 @@
 #endif
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
+
+DEFINE_int32(num_reps, 1,
+"Number of repetitions of computations to be performed");
+DEFINE_int32(batch_size, 1,
+"Batch size to be used for compuations");
+DEFINE_int32(channel_size, 50,
+"Dimm size of axe along which normalization takes place");
+
 /////////////////////////////////////////
 // We can assume that matrix dimensions are divisible by 8
 struct maxFunc : public Xbyak::CodeGenerator {
@@ -134,13 +142,6 @@ void simd_max(float& result, const float* X, int num_classes)
   asm volatile ("END MAX SIMD! <---");
 # endif
 }
-
-void xbyak_max(float& result, std::vector<float>&bottom)
-{
-
-}
-
-
 
 void seq_sum(float& result, std::vector<float>&bottom)
 {
@@ -312,18 +313,33 @@ void simd2_softmax(const float* X,
 }
 #endif
 
-int main()
+bool checkResults(std::vector<float>& results1, std::vector<float>& results2)
 {
-	//printf("Hello OpenMP World!. Thread limit: %d\n",omp_get_thread_limit());
+	bool consistency = true;
+	for (int i=0; i<results1.size(); ++i) {
+	 	consistency = consistency && (results1[i] == results2[i]);
+	}
+	return consistency;
+}
+
+int main(int argc, char** argv)
+{
+#ifndef GFLAGS_GFLAGS_H_
+  namespace gflags = google;
+#endif
+  gflags::SetUsageMessage("Perform max & softmax computation.\n"
+        "Usage:\n"
+        "    test_openmp [FLAGS]\n");
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     //const int num_elements = 1000;
 
     //float myarray[num_elements];
     //float outarray[num_elements];
     //for_add_openmp2(num_elements,myarray,outarray);
-    const int num_reps = 1000000;
+    const int num_classes = 1007;
 
-    const int sized = 1000000;
+    const int sized = FLAGS_channel_size*FLAGS_batch_size;
     float *bottom_uns, *top;
     
     int ret = posix_memalign((void**)&bottom_uns,32,sized*sizeof(float));
@@ -344,42 +360,42 @@ int main()
     }
     
 
-    std::cout << "Hello SIMD openmp!" << std::endl;
+    std::cout << "Num reps: " << FLAGS_num_reps << std::endl;
+    std::cout << "Channel Size: " << FLAGS_channel_size << std::endl;
+    std::cout << "Batch Size: " << FLAGS_batch_size << std::endl;
     float sumseq = 0.0f;
     float sumsimd = 0.0f;
     float sumsimd2 = 0.0f;
 
-    const int batch_size = 300;
-    const int num_classes = 1007;
 
 
     unsigned long long  t1;
     
 #ifdef USE_MKL
     // Warmup eg. does not account
-    for (int n=0; n < num_reps; ++n) {
+    for (int n=0; n < FLAGS_num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(bottom_uns, top,batch_size,num_classes); 
+      seq_softmax(bottom_uns, top,FLAGS_batch_size,num_classes); 
     }
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
-      simd2_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+    for (int n=0; n < FLAGS_num_reps; ++n) {
+      simd2_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
     }
     auto simd2t = __rdtsc() - t1;
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
+    for (int n=0; n < FLAGS_num_reps; ++n) {
 //      simd_sum(sumsimd,bottom_uns);
-      simd_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+      simd_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
     }
     auto simdt = __rdtsc() - t1;
 
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
+    for (int n=0; n < FLAGS_num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(&bottom_uns[0], &top[0],batch_size,num_classes); 
+      seq_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
     }
     auto seqt = __rdtsc() - t1;
 
@@ -389,36 +405,52 @@ int main()
 #endif
 
 
+		// MAX VALUE FINDING
+
     // Warmup eg. does not account
-    float result1,result2,result3;
+    std::vector<float> result1(FLAGS_batch_size);
+    std::vector<float> result2(FLAGS_batch_size);
+    std::vector<float> result3(FLAGS_batch_size);
 
     maxFunc max_func;
 		auto max_kernel = (void (*)(float& result, const float *x, int m))max_func.getCode();
 
-		seq_max(result1,bottom_uns,num_classes); 
+    for (int b=0; b< FLAGS_batch_size; ++b) {
+			seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],num_classes);
+		} 
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
-      simd_max(result2,bottom_uns,num_classes); 
+    for (int n=0; n < FLAGS_num_reps; ++n) {
+      for (int b=0; b< FLAGS_batch_size; ++b) {
+				simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],num_classes);
+			} 
     }
     auto simd_t = __rdtsc() - t1;
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
-      max_kernel(result3,bottom_uns,num_classes); 
+    for (int n=0; n < FLAGS_num_reps; ++n) {
+      for (int b=0; b< FLAGS_batch_size; ++b) {
+				max_kernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+			} 
     }
     auto asm_t = __rdtsc() - t1;
 
 
     t1 = __rdtsc();
-    for (int n=0; n < num_reps; ++n) {
-      seq_max(result1,bottom_uns,num_classes); 
+    for (int n=0; n < FLAGS_num_reps; ++n) {
+      for (int b=0; b< FLAGS_batch_size; ++b) {
+				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+			} 
     }
     auto seq_t = __rdtsc() - t1;
 
-		std::cout << "max SEQ = " << result1 << std::endl;
-		std::cout << "max SIMD = " << result2 << std::endl;
-		std::cout << "max ASM = " << result3 << std::endl;
+		if (checkResults(result1,result2) == false) {
+			std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
+		}
+	  if (checkResults(result1,result3) == false) {
+			std::cout << "Error: Max finding for ASM is inconsistent with SEQ" << std::endl;
+		}
+
     std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
     std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
     std::cout << "max ASM is :" << asm_t/(float)seq_t << " of sequence time" << std::endl;

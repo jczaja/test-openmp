@@ -34,9 +34,8 @@ DEFINE_int32(channel_size, 50,
 "Dimm size of axe along which normalization takes place");
 
 /////////////////////////////////////////
-// We can assume that matrix dimensions are divisible by 8
-struct maxFunc : public Xbyak::CodeGenerator {
-    maxFunc()
+struct maxAFunc : public Xbyak::CodeGenerator {
+    maxAFunc()
 {
 #if defined(__x86_64__)
 // calling convention RDI, RSI, RDX, RCX, R8, R9
@@ -77,6 +76,79 @@ struct maxFunc : public Xbyak::CodeGenerator {
     cmp(rdx,16);  
     jb("seq");
     vmovaps(xmm2,ptr [rsi + rax]);  // A
+		add(rax,16);				// Move offset for next 4 floating point values
+    sub(rdx,16);
+		vperm2f128(ymm2,ymm2,ymm2,0);
+		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
+  L("seq");
+	  cmp(rdx,0);
+    jz("done");	
+		vpbroadcastd(ymm2,ptr [rsi + rax]);
+		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
+    sub(rdx,4);
+    add(rax,4);
+    jmp("seq");
+  L("done");
+  // Get within shortlisted buffer maximum
+	vperm2f128(ymm1,ymm0,ymm0,1);
+  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
+  vpermilps(xmm1,xmm0,0x1B);
+  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
+  vpermilps(xmm1,xmm0,1);
+  vmaxps(ymm0,ymm0,ymm1);  //ymm0[0:31] contains global maximum
+  vmovss(ptr[rdi],xmm0); // Result <-Max(X[.])
+  pop(rbx);
+
+  printf("Generating Max Value code\n");
+#else
+        printf("32bit not supported\n");
+#endif
+  ret();
+}
+};
+
+struct maxUFunc : public Xbyak::CodeGenerator {
+    maxUFunc()
+{
+#if defined(__x86_64__)
+// calling convention RDI, RSI, RDX, RCX, R8, R9
+// XMM0-7 (ints are passed that way)
+//      RDI - Reference to Result
+//      RSI - PTR to Array
+//      RDX - Num classes 
+
+// Regsters that need to be preserved: RBX,RBP, R12-R15
+
+  Xbyak::util::Cpu current_cpu;
+  if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
+    printf("AVX2 supported!\n");
+  } else {
+    printf("AVX2 not detected!\n");
+  }
+
+  mov (rcx,rdx);	
+  push(rbx);
+  shr (rcx,3);  // Divide by 8 (eight floats)
+  shl (rdx,2);  // num of Output elements * size of float (4)
+  shl (rcx,5);  // Trunc to 32 bytes 
+
+
+	// Compute partial maximums
+  vpbroadcastd(ymm0,ptr [rsi]);
+  xor(rax,rax);				// Move offset for next 8 floating point values
+  L("for_i");
+    cmp(rax,rcx);
+    jz("tail");
+    vmovups(ymm1,ptr [rsi + rax]);  // A
+		add(rax,32);				// Move offset for next 8 floating point values
+		vmaxps(ymm0,ymm0,ymm1);
+    jmp("for_i");
+  // Tail execution
+  L("tail");
+    sub(rdx,rcx);
+    cmp(rdx,16);  
+    jb("seq");
+    vmovups(xmm2,ptr [rsi + rax]);  // A
 		add(rax,16);				// Move offset for next 4 floating point values
     sub(rdx,16);
 		vperm2f128(ymm2,ymm2,ymm2,0);
@@ -407,13 +479,18 @@ int main(int argc, char** argv)
 
 		// MAX VALUE FINDING
 
+		// First batch is aligned , all others are aligned if channel size is divisible by 4
+		bool run_aligned = (FLAGS_channel_size % 4 == 0) || (FLAGS_batch_size == 1);
+
     // Warmup eg. does not account
     std::vector<float> result1(FLAGS_batch_size);
     std::vector<float> result2(FLAGS_batch_size);
     std::vector<float> result3(FLAGS_batch_size);
 
-    maxFunc max_func;
-		auto max_kernel = (void (*)(float& result, const float *x, int m))max_func.getCode();
+    maxAFunc max_afunc;
+    maxUFunc max_ufunc;
+		auto max_akernel = (void (*)(float& result, const float *x, int m))max_afunc.getCode();
+		auto max_ukernel = (void (*)(float& result, const float *x, int m))max_ufunc.getCode();
 
     for (int b=0; b< FLAGS_batch_size; ++b) {
 			seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],num_classes);
@@ -428,12 +505,22 @@ int main(int argc, char** argv)
     auto simd_t = __rdtsc() - t1;
 
     t1 = __rdtsc();
+		if (run_aligned) {
+			for (int n=0; n < FLAGS_num_reps; ++n) {
+				for (int b=0; b< FLAGS_batch_size; ++b) {
+					max_akernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+				} 
+			}
+		}
+    auto asma_t = __rdtsc() - t1;
+
+    t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
       for (int b=0; b< FLAGS_batch_size; ++b) {
-				max_kernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+				max_ukernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
 			} 
     }
-    auto asm_t = __rdtsc() - t1;
+    auto asmu_t = __rdtsc() - t1;
 
 
     t1 = __rdtsc();
@@ -453,7 +540,10 @@ int main(int argc, char** argv)
 
     std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
     std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
-    std::cout << "max ASM is :" << asm_t/(float)seq_t << " of sequence time" << std::endl;
+
+    std::cout << "max unaligned ASM is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
+		if (run_aligned)
+			std::cout << "max aligned ASM is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
 
     free(bottom_uns);
     free(top);

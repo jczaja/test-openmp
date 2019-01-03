@@ -545,9 +545,9 @@ int main(int argc, char** argv)
     std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
     std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
 
-    std::cout << "max unaligned ASM is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
+    std::cout << "max unaligned JIT is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
 		if (run_aligned)
-			std::cout << "max aligned ASM is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
+			std::cout << "max aligned JIT is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
 
     free(bottom_uns);
     free(top);

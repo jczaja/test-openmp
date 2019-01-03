@@ -486,6 +486,7 @@ int main(int argc, char** argv)
     std::vector<float> result1(FLAGS_batch_size);
     std::vector<float> result2(FLAGS_batch_size);
     std::vector<float> result3(FLAGS_batch_size);
+    std::vector<float> result4(FLAGS_batch_size);
 
     maxAFunc max_afunc;
     maxUFunc max_ufunc;
@@ -517,11 +518,10 @@ int main(int argc, char** argv)
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
       for (int b=0; b< FLAGS_batch_size; ++b) {
-				max_ukernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+				max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
 			} 
     }
     auto asmu_t = __rdtsc() - t1;
-
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
@@ -534,8 +534,12 @@ int main(int argc, char** argv)
 		if (checkResults(result1,result2) == false) {
 			std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
 		}
-	  if (checkResults(result1,result3) == false) {
-			std::cout << "Error: Max finding for ASM is inconsistent with SEQ" << std::endl;
+	  if ((run_aligned == true) && (checkResults(result1,result3) == false)) {
+			std::cout << "Error: Max finding for aligned JIT is inconsistent with SEQ" << std::endl;
+		}
+
+	  if (checkResults(result1,result4) == false) {
+			std::cout << "Error: Max finding for unaligned JIT is inconsistent with SEQ" << std::endl;
 		}
 
     std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;

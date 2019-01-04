@@ -404,12 +404,6 @@ int main(int argc, char** argv)
         "    test_openmp [FLAGS]\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    //const int num_elements = 1000;
-
-    //float myarray[num_elements];
-    //float outarray[num_elements];
-    //for_add_openmp2(num_elements,myarray,outarray);
-
     const int sized = FLAGS_channel_size*FLAGS_batch_size;
     float *bottom_uns, *top;
     
@@ -445,7 +439,6 @@ int main(int argc, char** argv)
 #ifdef USE_MKL
     // Warmup eg. does not account
     for (int n=0; n < FLAGS_num_reps; ++n) {
-//      seq_sum(sumseq,bottom_uns);
       seq_softmax(bottom_uns, top,FLAGS_batch_size,FLAGS_channel_size); 
     }
 
@@ -457,7 +450,6 @@ int main(int argc, char** argv)
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
-//      simd_sum(sumsimd,bottom_uns);
       simd_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
     }
     auto simdt = __rdtsc() - t1;
@@ -465,7 +457,6 @@ int main(int argc, char** argv)
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
-//      seq_sum(sumseq,bottom_uns);
       seq_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
     }
     auto seqt = __rdtsc() - t1;

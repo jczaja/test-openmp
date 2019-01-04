@@ -409,7 +409,6 @@ int main(int argc, char** argv)
     //float myarray[num_elements];
     //float outarray[num_elements];
     //for_add_openmp2(num_elements,myarray,outarray);
-    const int num_classes = 1007;
 
     const int sized = FLAGS_channel_size*FLAGS_batch_size;
     float *bottom_uns, *top;
@@ -447,19 +446,19 @@ int main(int argc, char** argv)
     // Warmup eg. does not account
     for (int n=0; n < FLAGS_num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(bottom_uns, top,FLAGS_batch_size,num_classes); 
+      seq_softmax(bottom_uns, top,FLAGS_batch_size,FLAGS_channel_size); 
     }
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
-      simd2_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
+      simd2_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
     }
     auto simd2t = __rdtsc() - t1;
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
 //      simd_sum(sumsimd,bottom_uns);
-      simd_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
+      simd_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
     }
     auto simdt = __rdtsc() - t1;
 
@@ -467,7 +466,7 @@ int main(int argc, char** argv)
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
 //      seq_sum(sumseq,bottom_uns);
-      seq_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,num_classes); 
+      seq_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
     }
     auto seqt = __rdtsc() - t1;
 
@@ -494,13 +493,13 @@ int main(int argc, char** argv)
 		auto max_ukernel = (void (*)(float& result, const float *x, int m))max_ufunc.getCode();
 
     for (int b=0; b< FLAGS_batch_size; ++b) {
-			seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],num_classes);
+			seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
 		} 
 
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
       for (int b=0; b< FLAGS_batch_size; ++b) {
-				simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],num_classes);
+				simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
 			} 
     }
     auto simd_t = __rdtsc() - t1;
@@ -509,7 +508,7 @@ int main(int argc, char** argv)
 		if (run_aligned) {
 			for (int n=0; n < FLAGS_num_reps; ++n) {
 				for (int b=0; b< FLAGS_batch_size; ++b) {
-					max_akernel(result3[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+					max_akernel(result3[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
 				} 
 			}
 		}
@@ -518,7 +517,7 @@ int main(int argc, char** argv)
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
       for (int b=0; b< FLAGS_batch_size; ++b) {
-				max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+				max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
 			} 
     }
     auto asmu_t = __rdtsc() - t1;
@@ -526,20 +525,23 @@ int main(int argc, char** argv)
     t1 = __rdtsc();
     for (int n=0; n < FLAGS_num_reps; ++n) {
       for (int b=0; b< FLAGS_batch_size; ++b) {
-				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],num_classes); 
+				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
 			} 
     }
     auto seq_t = __rdtsc() - t1;
 
 		if (checkResults(result1,result2) == false) {
 			std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
+      exit(-1);
 		}
 	  if ((run_aligned == true) && (checkResults(result1,result3) == false)) {
 			std::cout << "Error: Max finding for aligned JIT is inconsistent with SEQ" << std::endl;
+      exit(-1);
 		}
 
 	  if (checkResults(result1,result4) == false) {
 			std::cout << "Error: Max finding for unaligned JIT is inconsistent with SEQ" << std::endl;
+      exit(-1);
 		}
 
     std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;

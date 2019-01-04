@@ -3,6 +3,8 @@ project(test-openmp)
 
 include(CheckCXXCompilerFlag)
 
+enable_testing()
+
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/xbyak")
 add_definitions(-fno-operator-names)
 
@@ -92,6 +94,13 @@ set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBL
 
 add_executable(test-openmp-gomp main.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m ${GFLAGS_LIB})
+
+add_test( b1a ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp )
+add_test( b1_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 1 --channel_size 50 )
+add_test( b2_c1000 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1000 --num_reps 1)
+add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1007 --num_reps 2)
+add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
+add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 
 #add_executable(test-openmp main.cpp trace.cpp)
 #add_executable(test-openmp-iomp5 main.cpp) 

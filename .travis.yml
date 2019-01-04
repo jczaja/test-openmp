@@ -1,7 +1,9 @@
 language: cpp
 compiler: gcc
 script: make && ctest --output-on-failure
-
+os: linux
+distro: xenial
 before_script:
+- sudo apt-get install -y libgflags-dev 
 - mkdir build; cd build; cmake ../ -DCMAKE_BUILD_TYPE=Release
 

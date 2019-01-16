@@ -470,7 +470,7 @@ int main(int argc, char** argv)
 		// MAX VALUE FINDING
 
 		// First batch is aligned , all others are aligned if channel size is divisible by 4
-		bool run_aligned = (FLAGS_channel_size % 4 == 0) || (FLAGS_batch_size == 1);
+		bool run_aligned = (FLAGS_channel_size % 8 == 0) || (FLAGS_batch_size == 1);
 
     // Warmup eg. does not account
     std::vector<float> result1(FLAGS_batch_size);

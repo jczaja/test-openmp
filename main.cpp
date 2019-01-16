@@ -34,15 +34,15 @@ DEFINE_int32(channel_size, 50,
 "Dimm size of axe along which normalization takes place");
 
 /////////////////////////////////////////
-struct maxAFunc : public Xbyak::CodeGenerator {
-    maxAFunc()
+struct maxFunc : public Xbyak::CodeGenerator {
+    maxFunc(size_t channel_size, bool aligned) : _aligned(aligned)
 {
 #if defined(__x86_64__)
 // calling convention RDI, RSI, RDX, RCX, R8, R9
 // XMM0-7 (ints are passed that way)
 //      RDI - Reference to Result
 //      RSI - PTR to Array
-//      RDX - Num classes 
+//      RDX - Num classes
 
 // Regsters that need to be preserved: RBX,RBP, R12-R15
 
@@ -53,11 +53,11 @@ struct maxAFunc : public Xbyak::CodeGenerator {
     printf("AVX2 not detected!\n");
   }
 
-  mov (rcx,rdx);	
+  mov (rcx,rdx);
   push(rbx);
   shr (rcx,3);  // Divide by 8 (eight floats)
   shl (rdx,2);  // num of Output elements * size of float (4)
-  shl (rcx,5);  // Trunc to 32 bytes 
+  shl (rcx,5);  // Trunc to 32 bytes
 
 
 	// Compute partial maximums
@@ -66,23 +66,23 @@ struct maxAFunc : public Xbyak::CodeGenerator {
   L("for_i");
     cmp(rax,rcx);
     jz("tail");
-    vmovaps(ymm1,ptr [rsi + rax]);  // A
+    vmovps(ymm1,ptr [rsi + rax]);  // A
 		add(rax,32);				// Move offset for next 8 floating point values
 		vmaxps(ymm0,ymm0,ymm1);
     jmp("for_i");
   // Tail execution
   L("tail");
     sub(rdx,rcx);
-    cmp(rdx,16);  
+    cmp(rdx,16);
     jb("seq");
-    vmovaps(xmm2,ptr [rsi + rax]);  // A
+    vmovps(xmm2,ptr [rsi + rax]);  // A
 		add(rax,16);				// Move offset for next 4 floating point values
     sub(rdx,16);
 		vperm2f128(ymm2,ymm2,ymm2,0);
 		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
   L("seq");
 	  cmp(rdx,0);
-    jz("done");	
+    jz("done");
 		vpbroadcastd(ymm2,ptr [rsi + rax]);
 		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
     sub(rdx,4);
@@ -105,82 +105,16 @@ struct maxAFunc : public Xbyak::CodeGenerator {
 #endif
   ret();
 }
-};
-
-struct maxUFunc : public Xbyak::CodeGenerator {
-    maxUFunc()
-{
-#if defined(__x86_64__)
-// calling convention RDI, RSI, RDX, RCX, R8, R9
-// XMM0-7 (ints are passed that way)
-//      RDI - Reference to Result
-//      RSI - PTR to Array
-//      RDX - Num classes 
-
-// Regsters that need to be preserved: RBX,RBP, R12-R15
-
-  Xbyak::util::Cpu current_cpu;
-  if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
-    printf("AVX2 supported!\n");
-  } else {
-    printf("AVX2 not detected!\n");
+private:
+  void vmovps(const Xbyak::Xmm& xm, const Xbyak::Operand& op) {
+    if(_aligned)
+      vmovaps(xm, op);
+    else
+      vmovups(xm, op);
   }
-
-  mov (rcx,rdx);	
-  push(rbx);
-  shr (rcx,3);  // Divide by 8 (eight floats)
-  shl (rdx,2);  // num of Output elements * size of float (4)
-  shl (rcx,5);  // Trunc to 32 bytes 
-
-
-	// Compute partial maximums
-  vpbroadcastd(ymm0,ptr [rsi]);
-  xor(rax,rax);				// Move offset for next 8 floating point values
-  L("for_i");
-    cmp(rax,rcx);
-    jz("tail");
-    vmovups(ymm1,ptr [rsi + rax]);  // A
-		add(rax,32);				// Move offset for next 8 floating point values
-		vmaxps(ymm0,ymm0,ymm1);
-    jmp("for_i");
-  // Tail execution
-  L("tail");
-    sub(rdx,rcx);
-    cmp(rdx,16);  
-    jb("seq");
-    vmovups(xmm2,ptr [rsi + rax]);  // A
-		add(rax,16);				// Move offset for next 4 floating point values
-    sub(rdx,16);
-		vperm2f128(ymm2,ymm2,ymm2,0);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-  L("seq");
-	  cmp(rdx,0);
-    jz("done");	
-		vpbroadcastd(ymm2,ptr [rsi + rax]);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-    sub(rdx,4);
-    add(rax,4);
-    jmp("seq");
-  L("done");
-  // Get within shortlisted buffer maximum
-	vperm2f128(ymm1,ymm0,ymm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,0x1B);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //ymm0[0:31] contains global maximum
-  vmovss(ptr[rdi],xmm0); // Result <-Max(X[.])
-  pop(rbx);
-
-  printf("Generating Max Value code\n");
-#else
-        printf("32bit not supported\n");
-#endif
-  ret();
-}
+  bool _aligned;
 };
-////////////////////////
-
+/////////////////////////////////////////
 
 void seq_max(float& result, const float* X, int num_classes)
 {
@@ -478,8 +412,8 @@ int main(int argc, char** argv)
     std::vector<float> result3(FLAGS_batch_size);
     std::vector<float> result4(FLAGS_batch_size);
 
-    maxAFunc max_afunc;
-    maxUFunc max_ufunc;
+    maxFunc max_afunc(0, true);
+    maxFunc max_ufunc(0, false);
 		auto max_akernel = (void (*)(float& result, const float *x, int m))max_afunc.getCode();
 		auto max_ukernel = (void (*)(float& result, const float *x, int m))max_ufunc.getCode();
 

@@ -71,26 +71,37 @@ struct maxFunc : public Xbyak::CodeGenerator {
 		vmaxps(ymm0,ymm0,ymm1);
     jmp("for_i");
   // Tail execution
-  L("tail");
-    sub(rdx,rcx);
-    cmp(rdx,16);
-    jb("seq");
-    vmovps(xmm2,ptr [rsi + rax]);  // A
-		add(rax,16);				// Move offset for next 4 floating point values
-    sub(rdx,16);
-		vperm2f128(ymm2,ymm2,ymm2,0);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-  L("seq");
-	  cmp(rdx,0);
-    jz("done");
-		vpbroadcastd(ymm2,ptr [rsi + rax]);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-    sub(rdx,4);
-    add(rax,4);
-    jmp("seq");
-  L("done");
+  if (channel_size % 8)
+  {
+    if (channel_size > 8)
+    {
+      // Compute address of tail
+      vmovps(ymm2, ptr[rdx - 32]);
+      vmaxps(ymm0, ymm0, ymm2);
+    } else
+    {
+      L("tail");
+      sub(rdx, rcx);
+      cmp(rdx, 16);
+      jb("seq");
+      vmovps(xmm2, ptr[rsi + rax]);  // A
+      add(rax, 16);        // Move offset for next 4 floating point values
+      sub(rdx, 16);
+      vperm2f128(ymm2, ymm2, ymm2, 0);
+      vmaxps(ymm0, ymm0, ymm2);  //partial maxes in ymm0
+      L("seq");
+      cmp(rdx, 0);
+      jz("done");
+      vpbroadcastd(ymm2, ptr[rsi + rax]);
+      vmaxps(ymm0, ymm0, ymm2);  //partial maxes in ymm0
+      sub(rdx, 4);
+      add(rax, 4);
+      jmp("seq");
+      L("done");
+    }
+  }
   // Get within shortlisted buffer maximum
-	vperm2f128(ymm1,ymm0,ymm0,1);
+  vperm2f128(ymm1,ymm0,ymm0,1);
   vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
   vpermilps(xmm1,xmm0,0x1B);
   vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0

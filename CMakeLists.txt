@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(test-openmp)
 
 include(CheckCXXCompilerFlag)
+include(ExternalProject)
 
 enable_testing()
 
@@ -61,10 +62,6 @@ find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
 
 set(MKL_LIBRARIES "")
 
-
-
-
-
 if(MKL_ROOT)
 find_library(MKL_ILP_LIBRARY
         NAMES mkl_intel_ilp64
@@ -83,6 +80,28 @@ list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
   include_directories(${MKL_INCLUDE_DIR})
 	add_definitions(-DUSE_MKL)
 endif()
+
+find_program(PERF NAMES perf)
+
+if(PERF)
+message(INFO "Perf found!")
+
+SET(PERFMON "extern_perfmon")
+ExternalProject_Add(
+    ${PERFMON}
+    GIT_REPOSITORY      "https://git.code.sf.net/p/perfmon2/libpfm4.git"
+    GIT_TAG             "8f2208a1ff62e8ef6403d246042e64f941f4f729"   
+    SOURCE_DIR          "extern_perfmon"
+    BUILD_IN_SOURCE     "True"
+    UPDATE_COMMAND      ""
+    CONFIGURE_COMMAND   ""
+    BUILD_COMMAND       "make"
+    #INSTALL_COMMAND     "examples/showevtinfo > log.show && cat log.show | grep ": AVX" -A5 | grep "counts of AVX" | cut -d ':' -f 2 "#| sed "s: ::g" | xargs -I % ./examples/check_events AVX:%"
+    INSTALL_COMMAND     ""
+    COMMAND             "examples/showevtinfo && ls"
+)
+endif(PERF)
+
 
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(test-openmp)
 
 include(CheckCXXCompilerFlag)
@@ -84,7 +84,7 @@ endif()
 find_program(PERF NAMES perf)
 
 if(PERF)
-message(INFO "Perf found!")
+message(STATUS "Perf found!")
 
 SET(PERFMON "extern_perfmon")
 ExternalProject_Add(
@@ -96,10 +96,16 @@ ExternalProject_Add(
     UPDATE_COMMAND      ""
     CONFIGURE_COMMAND   ""
     BUILD_COMMAND       "make"
-    #INSTALL_COMMAND     "examples/showevtinfo > log.show && cat log.show | grep ": AVX" -A5 | grep "counts of AVX" | cut -d ':' -f 2 "#| sed "s: ::g" | xargs -I % ./examples/check_events AVX:%"
     INSTALL_COMMAND     ""
-    COMMAND             "examples/showevtinfo && ls"
 )
+
+add_custom_target(
+perf
+COMMAND cmake -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
+DEPENDS ${PERFMON} test-openmp-gomp
+)
+
 endif(PERF)
 
 
@@ -121,9 +127,3 @@ add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --ch
 add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
 add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
-
-#add_executable(test-openmp main.cpp trace.cpp)
-#add_executable(test-openmp-iomp5 main.cpp) 
-#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 -L/home/jczaja/test-openmp)
-#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 )
-#set_target_properties(test-openmp-iomp5 PROPERTIES LINK_FLAGS -Wl,--as-needed)

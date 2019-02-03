@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 project(test-openmp)
 
 include(CheckCXXCompilerFlag)
+include(ExternalProject)
 
 enable_testing()
 
@@ -61,10 +62,6 @@ find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
 
 set(MKL_LIBRARIES "")
 
-
-
-
-
 if(MKL_ROOT)
 find_library(MKL_ILP_LIBRARY
         NAMES mkl_intel_ilp64
@@ -84,6 +81,34 @@ list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
 	add_definitions(-DUSE_MKL)
 endif()
 
+find_program(PERF NAMES perf)
+
+if(PERF)
+message(STATUS "Perf found!")
+
+SET(PERFMON "extern_perfmon")
+ExternalProject_Add(
+    ${PERFMON}
+    GIT_REPOSITORY      "https://git.code.sf.net/p/perfmon2/libpfm4.git"
+    GIT_TAG             "8f2208a1ff62e8ef6403d246042e64f941f4f729"   
+    SOURCE_DIR          "extern_perfmon"
+    BUILD_IN_SOURCE     "True"
+    UPDATE_COMMAND      ""
+    CONFIGURE_COMMAND   ""
+    BUILD_COMMAND       "make"
+    INSTALL_COMMAND     ""
+)
+
+add_custom_target(
+perf
+COMMAND cmake -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
+DEPENDS ${PERFMON} test-openmp-gomp
+)
+
+endif(PERF)
+
+
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
 add_library(assembly_dump main.cpp)
@@ -102,9 +127,3 @@ add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --ch
 add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
 add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
-
-#add_executable(test-openmp main.cpp trace.cpp)
-#add_executable(test-openmp-iomp5 main.cpp) 
-#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 -L/home/jczaja/test-openmp)
-#target_link_libraries(test-openmp-iomp5 -Wl,--as-needed iomp5 )
-#set_target_properties(test-openmp-iomp5 PROPERTIES LINK_FLAGS -Wl,--as-needed)

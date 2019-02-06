@@ -32,7 +32,7 @@ DEFINE_int32(batch_size, 1,
 "Batch size to be used for compuations");
 DEFINE_int32(channel_size, 50,
 "Dimm size of axe along which normalization takes place");
-
+DEFINE_string(algo, "", "Name of max algorithm to execute. Possible values: seq, simd, jit. Default: Run all");
 /////////////////////////////////////////
 struct maxAFunc : public Xbyak::CodeGenerator {
     maxAFunc()
@@ -469,8 +469,9 @@ int main(int argc, char** argv)
 
 		// MAX VALUE FINDING
 
-		// First batch is aligned , all others are aligned if channel size is divisible by 4
-		bool run_aligned = (FLAGS_channel_size % 8 == 0) || (FLAGS_batch_size == 1);
+		// First batch is aligned , all others are aligned if channel size is divisible by 8
+		// Only execute when no specific algorithm is selected
+		bool run_aligned = FLAGS_algo.empty() && ((FLAGS_channel_size % 8 == 0) || (FLAGS_batch_size == 1));
 
     // Warmup eg. does not account
     std::vector<float> result1(FLAGS_batch_size);
@@ -483,15 +484,19 @@ int main(int argc, char** argv)
 		auto max_akernel = (void (*)(float& result, const float *x, int m))max_afunc.getCode();
 		auto max_ukernel = (void (*)(float& result, const float *x, int m))max_ufunc.getCode();
 
-    for (int b=0; b< FLAGS_batch_size; ++b) {
-			seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-		} 
+    if (FLAGS_algo.empty()) {
+			for (int b=0; b< FLAGS_batch_size; ++b) {
+				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
+			} 
+    }
 
     t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      for (int b=0; b< FLAGS_batch_size; ++b) {
-				simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-			} 
+    if (FLAGS_algo.empty() || (FLAGS_algo.compare("simd") == 0)) {
+			for (int n=0; n < FLAGS_num_reps; ++n) {
+				for (int b=0; b< FLAGS_batch_size; ++b) {
+					simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
+				} 
+			}
     }
     auto simd_t = __rdtsc() - t1;
 
@@ -506,41 +511,47 @@ int main(int argc, char** argv)
     auto asma_t = __rdtsc() - t1;
 
     t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      for (int b=0; b< FLAGS_batch_size; ++b) {
-				max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-			} 
+    if (FLAGS_algo.empty() || (FLAGS_algo.compare("jit") == 0)) {
+			for (int n=0; n < FLAGS_num_reps; ++n) {
+				for (int b=0; b< FLAGS_batch_size; ++b) {
+					max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
+				} 
+			}
     }
     auto asmu_t = __rdtsc() - t1;
 
     t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      for (int b=0; b< FLAGS_batch_size; ++b) {
-				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-			} 
+    if (FLAGS_algo.empty() || (FLAGS_algo.compare("seq")==0)) {
+			for (int n=0; n < FLAGS_num_reps; ++n) {
+				for (int b=0; b< FLAGS_batch_size; ++b) {
+					seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
+				} 
+			}
     }
     auto seq_t = __rdtsc() - t1;
 
-		if (checkResults(result1,result2) == false) {
-			std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
-      exit(-1);
-		}
-	  if ((run_aligned == true) && (checkResults(result1,result3) == false)) {
-			std::cout << "Error: Max finding for aligned JIT is inconsistent with SEQ" << std::endl;
-      exit(-1);
-		}
+    if (FLAGS_algo.empty()) {
+			if (checkResults(result1,result2) == false) {
+				std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
+				exit(-1);
+			}
+			if ((run_aligned == true) && (checkResults(result1,result3) == false)) {
+				std::cout << "Error: Max finding for aligned JIT is inconsistent with SEQ" << std::endl;
+				exit(-1);
+			}
 
-	  if (checkResults(result1,result4) == false) {
-			std::cout << "Error: Max finding for unaligned JIT is inconsistent with SEQ" << std::endl;
-      exit(-1);
-		}
+			if (checkResults(result1,result4) == false) {
+				std::cout << "Error: Max finding for unaligned JIT is inconsistent with SEQ" << std::endl;
+				exit(-1);
+			}
 
-    std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
-    std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
+			std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
+			std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
 
-    std::cout << "max unaligned JIT is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
-		if (run_aligned)
-			std::cout << "max aligned JIT is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
+			std::cout << "max unaligned JIT is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
+			if (run_aligned)
+				std::cout << "max aligned JIT is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
+	  }
 
     free(bottom_uns);
     free(top);

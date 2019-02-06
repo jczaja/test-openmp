@@ -101,7 +101,7 @@ ExternalProject_Add(
 
 add_custom_target(
 perf
-COMMAND cmake -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+COMMAND cmake -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )

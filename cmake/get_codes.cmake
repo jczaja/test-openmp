@@ -79,7 +79,7 @@ if(512B_PACKED_SINGLE_CODE)
 set(CODES ${CODES} -e r${512B_PACKED_SINGLE_CODE})
 endif()
 
-set(SEQ_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo seq --num_reps $ENV{NUM_REPS})
+set(SEQ_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl seq --num_reps $ENV{NUM_REPS})
 
 string(REGEX REPLACE "\n" "" SEQ_COMMAND "${SEQ_COMMAND}")
 message(STATUS "${CODES}")
@@ -89,7 +89,18 @@ COMMAND ${SEQ_COMMAND}
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-set(JIT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo jit --num_reps $ENV{NUM_REPS})
+set(SIMD_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl simd --num_reps $ENV{NUM_REPS})
+
+string(REGEX REPLACE "\n" "" SIMD_COMMAND "${SIMD_COMMAND}")
+message(STATUS "${CODES}")
+message(STATUS "${EXAMPLE}")
+execute_process(
+COMMAND ${SIMD_COMMAND}
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
+
+set(JIT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl jit --num_reps $ENV{NUM_REPS})
 
 string(REGEX REPLACE "\n" "" JIT_COMMAND "${JIT_COMMAND}")
 message(STATUS "${CODES}")
@@ -98,3 +109,4 @@ execute_process(
 COMMAND ${JIT_COMMAND}
 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 )
+

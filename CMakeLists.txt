@@ -18,7 +18,6 @@ include_directories(SYSTEM ${GFLAGS_INCLUDES})
 
 find_package(OpenMP)
 if(OPENMP_FOUND)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -v")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(OpenMP_SIMD_Test_Source
 " int main()
@@ -100,8 +99,15 @@ ExternalProject_Add(
 )
 
 add_custom_target(
-perf
-COMMAND cmake -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+perf_max
+COMMAND cmake -Dalgo=max -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
+DEPENDS ${PERFMON} test-openmp-gomp
+)
+
+add_custom_target(
+perf_sum
+COMMAND cmake -Dalgo=sum -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )

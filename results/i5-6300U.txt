@@ -1,0 +1,44 @@
+============ SUM ============
+Platform: i5-6300 CPU @ 2.4 Ghz
+
+SIMD: 0.77 * SEQ
+10 SCALAR
+6 256B PACKED * 8 = 48 
+Total FLOPS: 100000000*58 = 5800000000
+
+Utilisation = Total FLOPS / (Theoretical FLOPS * exec_time) = 0.042989
+
+
+SEQ: 4563.3 ms
+50 SCALAR
+
+Total FLOPS: 100000000*50 = 5000000000
+
+Theoretical flops = 2.4*2*8*1000000000 = 3.84e10 
+
+Utilisation = Total FLOPS / (Theoretical FLOPS * exec_time) = 0.028536
+
+Pure theoretical:
+Total FLOPS  = 100000000*49  = 4900000000 FLOPS needed for summing up
+
+Theoretical time = TOTAL FLOPS / Theoretical FLOPS = 0.127604
+Utilisation: Theoretical time / exec_time = 0.036318
+
+
+============ MAX ============
+vucomiss is not measured via events so only JIT version has a meaningful results
+
+SEQ: 5380.59 ms
+
+JIT: 0.172895 * SEQ
+11 256B_PACKED_SINGLE *8 = 88
+Total FLOPS = 100000000*88 = 8800000000
+
+Theoretical flops = 2.4*2*8*1000000000 = 3.84e10 
+Utilisation = Total FLOPS / (Theoretical FLOPS * exec_time) = 0.246369
+
+PURE Theoretical:
+Total FLOPS  = 100000000*50  = 5000000000 FLOPS needed for getting max val
+Theoretical time = TOTAL FLOPS / Theoretical FLOPS = 0.130208
+Utilisation: Theoretical time / exec_time = 0.139967
+

@@ -34,6 +34,7 @@ DEFINE_int32(channel_size, 50,
 "Dimm size of axe along which normalization takes place");
 DEFINE_string(impl, "", "Name of implementation to execute. Possible values: seq, simd, jit. Default: Run all");
 DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
+DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 /////////////////////////////////////////
 struct maxAFunc : public Xbyak::CodeGenerator {
     maxAFunc()
@@ -531,6 +532,49 @@ void run_max_experiments(const float* bottom_uns)
 
 }
 
+void run_mem_test(void)
+{
+  // Get 512 MB for source and copy it to 512 MB dst. 
+  // Intention is to copy more memory than it can be fead into cache 
+  size_t size_of_floats = 128*1024*1024;
+  float *src,*dst;
+  int ret = posix_memalign((void**)&src,64,size_of_floats*sizeof(float));
+  if (ret != 0) {
+    std::cout << "Allocation error of source buffer!" << std::endl;
+    exit(-1);
+  }
+  ret = posix_memalign((void**)&dst,64,size_of_floats*sizeof(float));
+  if (ret != 0) {
+    std::cout << "Allocation error of target buffer!" << std::endl;
+    exit(-1);
+  }
+
+  // Generate data 
+  for(unsigned int i=0; i < size_of_floats; ++i) {
+    src[i] = i;
+    dst[i] = 0.0f;
+  } 
+
+  // Copying data as fast as possible
+  auto start_t = __rdtsc();
+  memcpy(dst,src,size_of_floats*sizeof(float));
+  auto memcpy_t = __rdtsc() - start_t;
+
+  // Data was read and then write so Q = Q_r + Q_w
+  float t_s = memcpy_t / ((float)2.4f);
+  auto throughput = 2.0f*size_of_floats*sizeof(float) / t_s ;
+
+
+  std::cout << "Q:" << (2.0f*size_of_floats*sizeof(float)) << std::endl;
+  std::cout << "memcpy_t:" << memcpy_t << std::endl;
+  std::cout << "t_s:" << t_s << std::endl;
+  std::cout << "throughput:" << throughput << std::endl;
+
+  std::cout << " Memory Throughput: " << throughput << " [GB/s]" << std::endl;
+
+  free(src);
+  free(dst);
+}
 
 int main(int argc, char** argv)
 {
@@ -541,6 +585,12 @@ int main(int argc, char** argv)
         "Usage:\n"
         "    test_openmp [FLAGS]\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    // Memory thoughput test
+		if (FLAGS_memtest) {
+       run_mem_test();
+       return 0;
+    }
 
     const int sized = FLAGS_channel_size*FLAGS_batch_size;
     float *bottom_uns, *top;
@@ -566,36 +616,6 @@ int main(int argc, char** argv)
     std::cout << "Num reps: " << FLAGS_num_reps << std::endl;
     std::cout << "Channel Size: " << FLAGS_channel_size << std::endl;
     std::cout << "Batch Size: " << FLAGS_batch_size << std::endl;
-
-#ifdef USE_MKL
-    // Warmup eg. does not account
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      seq_softmax(bottom_uns, top,FLAGS_batch_size,FLAGS_channel_size); 
-    }
-
-    t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      simd2_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
-    }
-    auto simd2t = __rdtsc() - t1;
-
-    t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      simd_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
-    }
-    auto simdt = __rdtsc() - t1;
-
-
-    t1 = __rdtsc();
-    for (int n=0; n < FLAGS_num_reps; ++n) {
-      seq_softmax(&bottom_uns[0], &top[0],FLAGS_batch_size,FLAGS_channel_size); 
-    }
-    auto seqt = __rdtsc() - t1;
-
-    std::cout << "softmax SEQ is : " << seqt/((float)2.5*1000000.0) << " ms" << std::endl;
-    std::cout << "softmax SIMD is :" << simdt/(float)seqt << " of sequence time" << std::endl;
-    std::cout << "softmax SIMD2 is :" << simd2t/(float)seqt << " of sequence time" << std::endl;
-#endif
 
 		if (FLAGS_algo.compare("max") == 0)
 			run_max_experiments(bottom_uns);

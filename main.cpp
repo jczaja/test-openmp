@@ -532,6 +532,7 @@ void run_max_experiments(const float* bottom_uns)
 
 }
 
+
 void run_mem_test(void)
 {
   // Get 512 MB for source and copy it to 512 MB dst. 
@@ -555,31 +556,78 @@ void run_mem_test(void)
     dst[i] = 0.0f;
   } 
 
-  // Copying data as fast as possible
-  int num_threads = 1;
+  // Memory non-temporaral writes
+  auto memory_nontemp_write = [&](char* dst, size_t total_size, int num_threads) {
+    __m256i* varray = (__m256i*) dst;
 
-  auto memory_copy = [&](void* dst, void* src , size_t total_size, int num_threads) {
+    __m256i vals = _mm256_set1_epi32(1);
+    size_t i;
+    auto start_t = __rdtsc();
+    #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+    for (i = 0; i < total_size / sizeof(__m256); i++) {
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("BEGIN NON-TEMP <---");
+#     endif
+      _mm256_stream_si256(&varray[i], vals);  // This generates the vmovntdq instruction on Brix (i7-4700R (AVX2, Fedora 21)
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("END NON-TEMP <---");
+#     endif
+    }
+    return __rdtsc() - start_t;
+  };
+
+  // Writting memory as fast as possible
+  auto memory_write = [&](char* dst, size_t total_size, int num_threads) {
+      auto size_to_write = total_size/num_threads;
+      auto start_t = __rdtsc();
+      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+      for(int i=0; i < num_threads; ++i) { 
+          memset(dst + i*size_to_write, 2,size_to_write);
+      }
+      return __rdtsc() - start_t;
+  };
+
+  // Copying data as fast as possible
+  auto memory_copy = [&](char* dst, char* src , size_t total_size, int num_threads) {
       auto size_to_copy = total_size/num_threads;
       auto start_t = __rdtsc();
       #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
       for(int i=0; i < num_threads; ++i) { 
-          memcpy((void*)dst + i*size_to_copy,(void*)src+i*size_to_copy,size_to_copy);
+          memcpy(dst + i*size_to_copy,src+i*size_to_copy,size_to_copy);
       }
       return __rdtsc() - start_t;
   };
 
 
-  // Data was read and then write so Q = Q_r + Q_w
-  float t_s = memcpy_t / ((float)2.4f);
-  auto throughput = 2.0f*size_of_floats*sizeof(float) / t_s ;
+  std::vector<unsigned long long> mem_nontemp_write_times;
+  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 1));
+  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 2));
+  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 4));
+  auto mem_nontemp_write_t = *(std::min_element(mem_nontemp_write_times.begin(), mem_nontemp_write_times.end()));
+  auto nontemp_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_write_t / ((float)3.2f));
+  std::cout << " Memory Non-Temporal Write Throughput: " << nontemp_write_throughput << " [GB/s]" << std::endl;
 
+
+  std::vector<unsigned long long> mem_write_times;
+  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 1));
+  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 2));
+  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 4));
+  auto mem_write_t = *(std::min_element(mem_write_times.begin(), mem_write_times.end()));
+  auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)3.2f));
+  std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
+  
+
+  std::vector<unsigned long long> memcpy_times;
+  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 1));
+  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 2));
+
+  auto memcpy_t = *(std::min_element(memcpy_times.begin(), memcpy_times.end()));
+
+  // Data was read and then write so Q = Q_r + Q_w
+  auto throughput = 2.0f*size_of_floats*sizeof(float) / (memcpy_t / ((float)3.2f));
 
   std::cout << "Q:" << (2.0f*size_of_floats*sizeof(float)) << std::endl;
-  std::cout << "memcpy_t:" << memcpy_t << std::endl;
-  std::cout << "t_s:" << t_s << std::endl;
-  std::cout << "throughput:" << throughput << std::endl;
-
-  std::cout << " Memory Throughput: " << throughput << " [GB/s]" << std::endl;
+  std::cout << " Memory Copy Throughput: " << throughput << " [GB/s]" << std::endl;
 
   free(src);
   free(dst);

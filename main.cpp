@@ -556,9 +556,18 @@ void run_mem_test(void)
   } 
 
   // Copying data as fast as possible
-  auto start_t = __rdtsc();
-  memcpy(dst,src,size_of_floats*sizeof(float));
-  auto memcpy_t = __rdtsc() - start_t;
+  int num_threads = 1;
+
+  auto memory_copy = [&](void* dst, void* src , size_t total_size, int num_threads) {
+      auto size_to_copy = total_size/num_threads;
+      auto start_t = __rdtsc();
+      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+      for(int i=0; i < num_threads; ++i) { 
+          memcpy((void*)dst + i*size_to_copy,(void*)src+i*size_to_copy,size_to_copy);
+      }
+      return __rdtsc() - start_t;
+  };
+
 
   // Data was read and then write so Q = Q_r + Q_w
   float t_s = memcpy_t / ((float)2.4f);

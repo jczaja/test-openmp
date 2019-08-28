@@ -34,7 +34,116 @@ DEFINE_int32(channel_size, 50,
 "Dimm size of axe along which normalization takes place");
 DEFINE_string(impl, "", "Name of implementation to execute. Possible values: seq, simd, jit. Default: Run all");
 DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
+DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
+/////////////////////////////////////////
+struct platform_info
+{
+    long num_logical_processors;
+    long num_physical_processors_per_socket;
+    long num_hw_threads_per_socket;
+    unsigned int num_ht_threads; 
+    unsigned int num_total_phys_cores;
+    float tsc_ghz;
+    unsigned long long max_bandwidth; 
+};
+
+class nn_hardware_platform
+{
+    public:
+        nn_hardware_platform() : m_num_logical_processors(0), m_num_physical_processors_per_socket(0), m_num_hw_threads_per_socket(0) ,m_num_ht_threads(1), m_num_total_phys_cores(1), m_tsc_ghz(0), m_fmaspc(0)
+        {
+#ifdef __linux__
+            m_num_logical_processors = sysconf(_SC_NPROCESSORS_ONLN);
+        
+            m_num_physical_processors_per_socket = 0;
+
+            std::ifstream ifs;
+            ifs.open("/proc/cpuinfo"); 
+
+            // If there is no /proc/cpuinfo fallback to default scheduler
+            if(ifs.good() == false) {
+                m_num_physical_processors_per_socket = m_num_logical_processors;
+                assert(0);  // No cpuinfo? investigate that
+                return;   
+            }
+            std::string cpuinfo_content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+            std::stringstream cpuinfo_stream(cpuinfo_content);
+            std::string cpuinfo_line;
+            std::string cpu_name;
+            while(std::getline(cpuinfo_stream,cpuinfo_line,'\n')){
+                if((m_num_physical_processors_per_socket == 0) && (cpuinfo_line.find("cpu cores") != std::string::npos)) {
+                    // convert std::string into number eg. skip colon and after it in the same line  should be number of physical cores per socket
+                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find(":") + 1) ) >> m_num_physical_processors_per_socket; 
+                }
+                if(cpuinfo_line.find("siblings") != std::string::npos) {
+                    // convert std::string into number eg. skip colon and after it in the same line  should be number of HW threads per socket
+                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find(":") + 1) ) >> m_num_hw_threads_per_socket; 
+                }
+
+                if(cpuinfo_line.find("model") != std::string::npos) {
+                    cpu_name = cpuinfo_line;
+                    // convert std::string into number eg. skip colon and after it in the same line  should be number of HW threads per socket
+                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find("@") + 1) ) >> m_tsc_ghz; 
+                }
+                
+                // determine instruction set (AVX, AVX2, AVX512)
+                if(m_fmaspc == 0) {
+                  if (cpuinfo_line.find(" avx") != std::string::npos) {
+                    m_fmaspc = 8;   // On AVX instruction set we have one FMA unit , width of registers is 256bits, so we can do 8 muls and adds on floats per cycle
+                    if (cpuinfo_line.find(" avx2") != std::string::npos) {
+                      m_fmaspc = 16;   // With AVX2 instruction set we have two FMA unit , width of registers is 256bits, so we can do 16 muls and adds on floats per cycle
+                    }
+                    if (cpuinfo_line.find(" avx512") != std::string::npos) {
+                      m_fmaspc = 32;   // With AVX512 instruction set we have two FMA unit , width of registers is 512bits, so we can do 32 muls and adds on floats per cycle
+                    }
+                  } 
+               }
+            }
+
+            // There is cpuinfo, but parsing did not get quite right? Investigate it
+            assert( m_num_physical_processors_per_socket > 0);
+            assert( m_num_hw_threads_per_socket > 0);
+
+            // Calculate how many threads can be run on single cpu core , in case of lack of hw info attributes assume 1
+            m_num_ht_threads =  m_num_physical_processors_per_socket != 0 ? m_num_hw_threads_per_socket/ m_num_physical_processors_per_socket : 1;
+            // calculate total number of physical cores eg. how many full Hw threads we can run in parallel
+            m_num_total_phys_cores = m_num_hw_threads_per_socket != 0 ? m_num_logical_processors / m_num_hw_threads_per_socket * m_num_physical_processors_per_socket : 1;
+
+            std::cout << "Platform:" << std::endl << "  " << cpu_name << std::endl 
+                      << "  number of physical cores: " << m_num_total_phys_cores << std::endl; 
+            ifs.close(); 
+
+#endif
+        }
+    // Function computing percentage of theretical efficiency of HW capabilities
+    float compute_theoretical_efficiency(unsigned long long start_time, unsigned long long end_time, unsigned long long num_fmas)
+    {
+      // Num theoretical operations
+      // Time given is there
+      return 100.0*num_fmas/((float)(m_num_total_phys_cores*m_fmaspc))/((float)(end_time - start_time));
+    }
+
+    void get_platform_info(platform_info& pi)
+    {
+       pi.num_logical_processors = m_num_logical_processors; 
+       pi.num_physical_processors_per_socket = m_num_physical_processors_per_socket; 
+       pi.num_hw_threads_per_socket = m_num_hw_threads_per_socket;
+       pi.num_ht_threads = m_num_ht_threads;
+       pi.num_total_phys_cores = m_num_total_phys_cores;
+       pi.tsc_ghz = m_tsc_ghz;
+       pi.max_bandwidth = m_max_bandwidth;
+    }
+    private:
+        long m_num_logical_processors;
+        long m_num_physical_processors_per_socket;
+        long m_num_hw_threads_per_socket;
+        unsigned int m_num_ht_threads;
+        unsigned int m_num_total_phys_cores;
+        float m_tsc_ghz;
+        short int m_fmaspc;
+        unsigned long long m_max_bandwidth;
+};
 /////////////////////////////////////////
 struct maxAFunc : public Xbyak::CodeGenerator {
     maxAFunc()
@@ -533,7 +642,7 @@ void run_max_experiments(const float* bottom_uns)
 }
 
 
-void run_mem_test(void)
+void run_mem_test(platform_info& pi)
 {
   // Get 512 MB for source and copy it to 512 MB dst. 
   // Intention is to copy more memory than it can be fead into cache 
@@ -598,13 +707,12 @@ void run_mem_test(void)
       return __rdtsc() - start_t;
   };
 
-
   std::vector<unsigned long long> mem_nontemp_write_times;
   mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 2));
   mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 4));
   auto mem_nontemp_write_t = *(std::min_element(mem_nontemp_write_times.begin(), mem_nontemp_write_times.end()));
-  auto nontemp_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_write_t / ((float)3.2f));
+  auto nontemp_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Non-Temporal Write Throughput: " << nontemp_write_throughput << " [GB/s]" << std::endl;
 
 
@@ -613,7 +721,7 @@ void run_mem_test(void)
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 2));
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 4));
   auto mem_write_t = *(std::min_element(mem_write_times.begin(), mem_write_times.end()));
-  auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)3.2f));
+  auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
   
 
@@ -624,9 +732,8 @@ void run_mem_test(void)
   auto memcpy_t = *(std::min_element(memcpy_times.begin(), memcpy_times.end()));
 
   // Data was read and then write so Q = Q_r + Q_w
-  auto throughput = 2.0f*size_of_floats*sizeof(float) / (memcpy_t / ((float)3.2f));
+  auto throughput = 2.0f*size_of_floats*sizeof(float) / (memcpy_t / ((float)pi.tsc_ghz));
 
-  std::cout << "Q:" << (2.0f*size_of_floats*sizeof(float)) << std::endl;
   std::cout << " Memory Copy Throughput: " << throughput << " [GB/s]" << std::endl;
 
   free(src);
@@ -643,9 +750,13 @@ int main(int argc, char** argv)
         "    test_openmp [FLAGS]\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
+    nn_hardware_platform machine;
+    platform_info pi;
+    machine.get_platform_info(pi);
+
     // Memory thoughput test
 		if (FLAGS_memtest) {
-       run_mem_test();
+       run_mem_test(pi);
        return 0;
     }
 

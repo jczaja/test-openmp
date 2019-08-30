@@ -46,6 +46,7 @@ struct platform_info
     unsigned int num_total_phys_cores;
     float tsc_ghz;
     unsigned long long max_bandwidth; 
+    unsigned int flopc; // Floating point operations per cycle
 };
 
 class nn_hardware_platform
@@ -133,6 +134,7 @@ class nn_hardware_platform
        pi.num_total_phys_cores = m_num_total_phys_cores;
        pi.tsc_ghz = m_tsc_ghz;
        pi.max_bandwidth = m_max_bandwidth;
+       pi.flopc = m_fmaspc*m_num_total_phys_cores;      //TODO(jczaja): For xeon are there two ALU per physical core? 
     }
     private:
         long m_num_logical_processors;
@@ -642,6 +644,13 @@ void run_max_experiments(const float* bottom_uns)
 }
 
 
+    
+void run_cpu_test( platform_info& pi)
+{
+  //TODO(jczaja): Implement benchmark eg. FMA's based reduction code
+  std::cout << " Maximal Floating point operation per cycles: " << pi.flopc << " [FLOP/cycle]" << std::endl;
+}
+
 void run_mem_test(platform_info& pi)
 {
   // Get 512 MB for source and copy it to 512 MB dst. 
@@ -755,7 +764,13 @@ int main(int argc, char** argv)
     machine.get_platform_info(pi);
 
     // Memory thoughput test
-		if (FLAGS_memtest) {
+    if (FLAGS_cputest) {
+       run_cpu_test(pi);
+       return 0;
+    }
+
+    // Memory thoughput test
+    if (FLAGS_memtest) {
        run_mem_test(pi);
        return 0;
     }

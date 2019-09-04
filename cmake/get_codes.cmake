@@ -1,9 +1,12 @@
-function(get_stats ret)
-set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${ARGV1})
+function(get_stats ret num_reps mapping)
+set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${num_reps})
 
+list(LENGTH mapping len)
+message(STATUS "len list: ${len}" )
 
-message(STATUS "ARGV0:${ARGV0}" )
-message(STATUS "ARGV1:${ARGV1}" )
+message(STATUS "ARGV0:${ARGV0}")
+message(STATUS "ARGV1:${num_reps}")
+message(STATUS "ARGV2:${mapping}")
 
 string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
 
@@ -99,27 +102,34 @@ set(CODES perf stat)
 if(SCALAR_SINGLE_CODE)
 set(CODES ${CODES} -e r${SCALAR_SINGLE_CODE})
 message(STATUS "FP_ARITH_INST_RETIRED:SCALAR_SINGLE: ${SCALAR_SINGLE_CODE}")
+list(APPEND EventMapping "${SCALAR_SINGLE_CODE} 1") 
 endif()
 
 if(128B_PACKED_SINGLE_CODE)
 set(CODES ${CODES} -e r${128B_PACKED_SINGLE_CODE})
 message(STATUS "FP_ARITH_INST_RETIRED:128B_PACKED_SINGLE: ${128B_PACKED_SINGLE_CODE}")
+list(APPEND EventMapping "${128B_PACKED_SINGLE_CODE} 4")
 endif()
 
 if(256B_PACKED_SINGLE_CODE)
 set(CODES ${CODES} -e r${256B_PACKED_SINGLE_CODE})
 message(STATUS "FP_ARITH_INST_RETIRED:256B_PACKED_SINGLE: ${256B_PACKED_SINGLE_CODE}")
+list(APPEND EventMapping "${256B_PACKED_SINGLE_CODE} 8")
 endif()
 
 if(512B_PACKED_SINGLE_CODE)
 set(CODES ${CODES} -e r${512B_PACKED_SINGLE_CODE})
 message(STATUS "FP_ARITH_INST_RETIRED:512B_PACKED_SINGLE: ${512B_PACKED_SINGLE_CODE}")
+list(APPEND EventMapping "${512B_PACKED_SINGLE_CODE} 16")
 endif()
+
+list(LENGTH EventMapping len)
+message(STATUS "len list: ${len}" )
 
 set(FLOPS_1 "")
 set(FLOPS_2 "")
-get_stats(FLOPS_1 1)
-get_stats(FLOPS_2 2)
+get_stats(FLOPS_1 1 ${EventMapping})
+get_stats(FLOPS_2 2 ${EventMapping})
 
 # Compute diffrence among two iterations of kernel execution and one iteration of kernel
 # execution. This diffrence will be number of FLOPS of single instance of kernel

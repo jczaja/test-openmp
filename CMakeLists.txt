@@ -51,35 +51,6 @@ add_definitions(-std=c++0x)
 endif()
 endif()
 
-# ---[ Root folders
-set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
-find_path(MKL_ROOT include/mkl.h PATHS $ENV{MKLROOT} $ENV{MKL_ROOT} ${INTEL_ROOT}/mkl
-                                   DOC "Folder contains MKL")
-
-# ---[ Find include dir
-find_path(MKL_INCLUDE_DIR mkl.h PATHS ${MKL_ROOT} PATH_SUFFIXES include)
-
-set(MKL_LIBRARIES "")
-
-if(MKL_ROOT)
-find_library(MKL_ILP_LIBRARY
-        NAMES mkl_intel_ilp64
-        PATHS ${MKL_ROOT}/lib/intel64 )
-list(APPEND MKL_LIBRARIES ${MKL_ILP_LIBRARY})
-find_library(MKL_CORE_LIBRARY
-        NAMES libmkl_core mkl_core
-        PATHS ${MKL_ROOT}/lib/intel64 )
-list(APPEND MKL_LIBRARIES ${MKL_CORE_LIBRARY})
-
-find_library(MKL_INTEL_THREAD_LIBRARY
-        NAMES libmkl_gnu_thread mkl_gnu_thread
-        PATHS ${MKL_ROOT}/lib/intel64 )
-list(APPEND MKL_LIBRARIES ${MKL_INTEL_THREAD_LIBRARY})
-  message(STATUS "Found MKL (include: ${MKL_INCLUDE_DIR}, lib: ${MKL_LIBRARIES}")
-  include_directories(${MKL_INCLUDE_DIR})
-	add_definitions(-DUSE_MKL)
-endif()
-
 find_program(PERF NAMES perf)
 
 if(PERF)
@@ -99,15 +70,8 @@ ExternalProject_Add(
 )
 
 add_custom_target(
-perf_max
-COMMAND cmake -Dalgo=max -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
-WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
-DEPENDS ${PERFMON} test-openmp-gomp
-)
-
-add_custom_target(
-perf_sum
-COMMAND cmake -Dalgo=sum -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+work
+COMMAND cmake -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )
@@ -117,13 +81,14 @@ endif(PERF)
 
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
-add_library(assembly_dump main.cpp)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_library(assembly_dump ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
 set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
-add_executable(test-openmp-gomp main.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m ${GFLAGS_LIB})
 
 add_test( b1a ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp )

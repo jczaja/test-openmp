@@ -15,14 +15,12 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "gflags/gflags.h"
+#include "kernels/kernel.h"
 
 #include <string>
 #include <fstream>
 #include <streambuf>
 #include <sstream>
-#ifdef USE_MKL
-#include "mkl.h"
-#endif
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 
@@ -30,9 +28,13 @@ DEFINE_int32(num_reps, 1,
 "Number of repetitions of computations to be performed");
 DEFINE_int32(batch_size, 1,
 "Batch size to be used for compuations");
-DEFINE_int32(channel_size, 50,
-"Dimm size of axe along which normalization takes place");
-DEFINE_string(impl, "", "Name of implementation to execute. Possible values: seq, simd, jit. Default: Run all");
+DEFINE_int32(channel_size, 1,
+"Channel size to be used");
+DEFINE_int32(height, 1,
+"Height to be used for compuations");
+DEFINE_int32(width, 1,
+"Width to be used for compuations");
+
 DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
@@ -352,304 +354,14 @@ void simd_sum(float& result, const float* X, int num_classes)
 }
 
 
-#ifdef USE_MKL
-void seq_softmax(const float* X,
-                  float* Y, const int batch_size, const int num_classes) {
-
-    const float* in_data = X;
-    float* out_data = Y;
-    // 2D data. Batch x C
-    std::vector<float> entities(batch_size);
-    for (int n=0; n < batch_size; ++n) {
-      auto result = in_data[n*num_classes];
-      const float* tmpptr = &in_data[n*num_classes];
-    //  #pragma omp simd reduction(max: result) aligned(tmpptr)
-      for (int c=0; c < num_classes; ++c) {
-        if (tmpptr[c] > result) {
-          result = tmpptr[c];
-        }
-      }
-      entities[n] = result; 
-
-      for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - entities[n];
-      }
-    }
-    vsExp(num_classes*batch_size, out_data, out_data);
-
-    for (int n=0; n < batch_size; ++n) {
-      auto result = 0.0f; 
-      float* tmpptr = &out_data[n*num_classes];
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("BEGIN SEQUENCE! <---");
-#     endif
- //     #pragma omp simd reduction(+: result) aligned(tmpptr)
-      for (int c=0; c < num_classes; ++c) {
-        result += tmpptr[c];
-      }
-      entities[n] = result; 
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("END SEQUENCE! <---");
-#     endif
-      cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
-    }
-}
-#endif
 
 
-
-
-#ifdef USE_MKL
-void simd_softmax(const float* X,
-                  float* Y, const int batch_size, const int num_classes) {
-
-    const float* in_data = X;
-    float* out_data = Y;
-    // 2D data. Batch x C
-    std::vector<float> entities(batch_size);
-    for (int n=0; n < batch_size; ++n) {
-      auto result = in_data[n*num_classes];
-      const float* tmpptr = &in_data[n*num_classes];
-      //#pragma omp simd reduction(max: result) aligned(tmpptr)
-      #pragma omp simd reduction(max: result)
-      for (int c=0; c < num_classes; ++c) {
-        if (tmpptr[c] > result) {
-          result = tmpptr[c];
-        }
-      }
-
-      for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - result;
-      }
-    }
-    vsExp(num_classes*batch_size, out_data, out_data);
-
-    for (int n=0; n < batch_size; ++n) {
-      auto result = 0.0f; 
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("BEGIN SIMD! <---");
-#     endif
-      float* tmpptr = &out_data[n*num_classes];
-      //#pragma omp simd reduction(+: result) aligned(tmpptr)
-      #pragma omp simd reduction(+: result)
-      for (int c=0; c < num_classes; ++c) {
-        result += tmpptr[c];
-      }
-      entities[n] = result; 
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("END SIMD! <---");
-#     endif
-      cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
-    }
-}
-#endif
-
-#pragma omp declare simd uniform(ptr,num_classes) linear(n:1) notinbranch
-float simd2_sum(float* ptr, int n, int num_classes)
-{
-   float result = 0.0f;
-    float* tmpptr = ptr + n*num_classes;
-   for (int c=0; c < num_classes; ++c) {
-     result += tmpptr[c];
-   }
-  return result;
-}
-
-
-#ifdef USE_MKL
-void simd2_softmax(const float* X,
-                  float* Y, const int batch_size, const int num_classes) {
-
-    const float* in_data = X;
-    float* out_data = Y;
-    // 2D data. Batch x C
-    std::vector<float> entities(batch_size);
-    for (int n=0; n < batch_size; ++n) {
-      auto result = in_data[n*num_classes];
-      const float* tmpptr = &in_data[n*num_classes];
-      //#pragma omp simd reduction(max: result) aligned(tmpptr)
-      #pragma omp simd reduction(max: result) aligned(tmpptr:32)
-      for (int c=0; c < num_classes; ++c) {
-        if (tmpptr[c] > result) {
-          result = tmpptr[c];
-        }
-      }
-
-      for (int c=0; c < num_classes; ++c) {
-        out_data[n*num_classes+c] = in_data[n*num_classes+c] - result;
-      }
-    }
-    vsExp(num_classes*batch_size, out_data, out_data);
-
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("BEGIN SIMD2 <---");
-#     endif
-    #pragma omp simd
-    for (int n=0; n < batch_size; ++n) {
-      //#pragma omp simd reduction(+: result) aligned(tmpptr)
-      entities[n] = simd2_sum(&out_data[0],n,num_classes); 
-    }
-#   ifdef GENERATE_ASSEMBLY
-    asm volatile ("END SIMD2 <---");
-#   endif
-    for (int n=0; n < batch_size; ++n) {
-      cblas_sscal(num_classes, 1.0f/entities[n], &out_data[n*num_classes], 1);
-    }
-}
-#endif
-
-bool checkResults(std::vector<float>& results1, std::vector<float>& results2, float tolerance = 0.0f)
-{
-	bool consistency = true;
-	for (unsigned int i=0; i<results1.size(); ++i) {
-	 	consistency = consistency && (fabs(results1[i] - results2[i]) <= tolerance);
-	}
-  if (consistency == false) {
-    
-		for (unsigned int i=0; i<results1.size(); ++i) {
-			printf("r1[%d]=%f r2[%d]=%f\n",i,results1[i],i,results2[i]);
-		}
-  }
-	return consistency;
-}
-
-void run_sum_experiments(const float* bottom_uns)
-{
-    std::vector<float> result1(FLAGS_batch_size);
-    std::vector<float> result2(FLAGS_batch_size);
-
-    if (FLAGS_impl.empty()) {
-			for (int b=0; b< FLAGS_batch_size; ++b) {
-				seq_sum(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-			} 
-    }
-
-    auto t1 = __rdtsc();
-    if (FLAGS_impl.empty() || (FLAGS_impl.compare("simd") == 0)) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					simd_sum(result2[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-				} 
-			}
-    }
-    auto simd_t = __rdtsc() - t1;
-
-    t1 = __rdtsc();
-    if (FLAGS_impl.empty() || (FLAGS_impl.compare("seq")==0)) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					seq_sum(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-				} 
-			}
-    }
-    auto seq_t = __rdtsc() - t1;
-
-    if (FLAGS_impl.empty()) {
-			if (checkResults(result1,result2, 0.001) == false) {
-				std::cout << "Error: Sum  for SIMD is inconsistent with SEQ" << std::endl;
-				exit(-1);
-			}
-
-			std::cout << "sum SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
-			std::cout << "sum SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
-	  }
-}
-
-void run_max_experiments(const float* bottom_uns)
-{
-		// First batch is aligned , all others are aligned if channel size is divisible by 8
-		// Only execute when no specific algorithm is selected
-		bool run_aligned = FLAGS_impl.empty() && ((FLAGS_channel_size % 8 == 0) || (FLAGS_batch_size == 1));
-
-    // Warmup eg. does not account
-    std::vector<float> result1(FLAGS_batch_size);
-    std::vector<float> result2(FLAGS_batch_size);
-    std::vector<float> result3(FLAGS_batch_size);
-    std::vector<float> result4(FLAGS_batch_size);
-
-    maxAFunc max_afunc;
-    maxUFunc max_ufunc;
-		auto max_akernel = (void (*)(float& result, const float *x, int m))max_afunc.getCode();
-		auto max_ukernel = (void (*)(float& result, const float *x, int m))max_ufunc.getCode();
-
-    if (FLAGS_impl.empty()) {
-			for (int b=0; b< FLAGS_batch_size; ++b) {
-				seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-			} 
-    }
-
-    auto t1 = __rdtsc();
-    if (FLAGS_impl.empty() || (FLAGS_impl.compare("simd") == 0)) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					simd_max(result2[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size);
-				} 
-			}
-    }
-    auto simd_t = __rdtsc() - t1;
-
-    t1 = __rdtsc();
-		if (run_aligned) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					max_akernel(result3[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-				} 
-			}
-		}
-    auto asma_t = __rdtsc() - t1;
-
-    t1 = __rdtsc();
-    if (FLAGS_impl.empty() || (FLAGS_impl.compare("jit") == 0)) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					max_ukernel(result4[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-				} 
-			}
-    }
-    auto asmu_t = __rdtsc() - t1;
-
-    t1 = __rdtsc();
-    if (FLAGS_impl.empty() || (FLAGS_impl.compare("seq")==0)) {
-			for (int n=0; n < FLAGS_num_reps; ++n) {
-				for (int b=0; b< FLAGS_batch_size; ++b) {
-					seq_max(result1[b],&bottom_uns[b*FLAGS_channel_size],FLAGS_channel_size); 
-				} 
-			}
-    }
-    auto seq_t = __rdtsc() - t1;
-
-    if (FLAGS_impl.empty()) {
-			if (checkResults(result1,result2) == false) {
-				std::cout << "Error: Max finding for SIMD is inconsistent with SEQ" << std::endl;
-				exit(-1);
-			}
-			if ((run_aligned == true) && (checkResults(result1,result3) == false)) {
-				std::cout << "Error: Max finding for aligned JIT is inconsistent with SEQ" << std::endl;
-				exit(-1);
-			}
-
-			if (checkResults(result1,result4) == false) {
-				std::cout << "Error: Max finding for unaligned JIT is inconsistent with SEQ" << std::endl;
-				exit(-1);
-			}
-
-			std::cout << "max SEQ is : " << seq_t/((float)2.4*1000000.0) << " ms" << std::endl;
-			std::cout << "max SIMD is :" << simd_t/(float)seq_t << " of sequence time" << std::endl;
-
-			std::cout << "max unaligned JIT is :" << asmu_t/(float)seq_t << " of sequence time" << std::endl;
-			if (run_aligned)
-				std::cout << "max aligned JIT is :" << asma_t/(float)seq_t << " of sequence time" << std::endl;
-	  }
-
-}
-
-
-    
 void run_cpu_test( platform_info& pi)
 {
   //TODO(jczaja): Implement benchmark eg. FMA's based reduction code
   std::cout << " Maximal Floating point operation per cycles: " << pi.flopc << " [FLOP/cycle]" << std::endl;
 }
+
 
 void run_mem_test(platform_info& pi)
 {
@@ -775,38 +487,13 @@ int main(int argc, char** argv)
        return 0;
     }
 
-    const int sized = FLAGS_channel_size*FLAGS_batch_size;
-    float *bottom_uns, *top;
-    
-    int ret = posix_memalign((void**)&bottom_uns,32,sized*sizeof(float));
-    if (ret != 0) {
-      std::cout << "Allocation error of bottom!" << std::endl;
-      exit(-1);
-    }
-    ret = posix_memalign((void**)&top,32,sized*sizeof(float));
-    if (ret != 0) {
-      std::cout << "Allocation error of top!" << std::endl;
-      exit(-1);
-    }
-    
-    for(int i=0; i<sized; ++i) {
-      bottom_uns[i] = (float)i/sized + powf(-1.0f,(float)i)*2.0f;
-      //bottom_uns[i] = (float)i;
-      top[i] = 0.0f;
-    }
-    
-
     std::cout << "Num reps: " << FLAGS_num_reps << std::endl;
     std::cout << "Channel Size: " << FLAGS_channel_size << std::endl;
     std::cout << "Batch Size: " << FLAGS_batch_size << std::endl;
+    std::cout << "Height: " << FLAGS_height << std::endl;
+    std::cout << "Width: " << FLAGS_width << std::endl;
 
-		if (FLAGS_algo.compare("max") == 0)
-			run_max_experiments(bottom_uns);
-		if (FLAGS_algo.compare("sum") == 0)
-			run_sum_experiments(bottom_uns);
-
-    free(bottom_uns);
-    free(top);
+    Kernel(FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
 
 	return 0;
 }

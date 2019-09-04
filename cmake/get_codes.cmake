@@ -1,3 +1,36 @@
+function(get_stats ret)
+set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${ARGV1})
+
+
+message(STATUS "ARGV0:${ARGV0}" )
+message(STATUS "ARGV1:${ARGV1}" )
+
+string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
+
+# Get report of one execution 
+execute_process(
+COMMAND ${EXPERIMENT_COMMAND}
+WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+OUTPUT_VARIABLE OUTPUT_RESULT
+ERROR_VARIABLE ANALYSIS_RESULT
+)
+
+set(awk_script "{\$1=\$1\;print}")
+execute_process(
+    COMMAND echo ${ANALYSIS_RESULT}
+#    COMMAND grep -e ${SCALAR_SINGLE_CODE} 
+    COMMAND grep -e r5302c7  # TODO Events are given by arguments
+    COMMAND awk ${awk_script} # Remove trailing white characters
+    COMMAND cut -d " " -f 1     # Get value of counter given
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    OUTPUT_VARIABLE FLOPS
+)
+set(${ret} ${FLOPS} PARENT_SCOPE)
+
+endfunction()
+
+
+
 execute_process(
 COMMAND examples/showevtinfo
 COMMAND grep ": FP_ARITH_INST_RETIRED" -A 10
@@ -83,34 +116,14 @@ set(CODES ${CODES} -e r${512B_PACKED_SINGLE_CODE})
 message(STATUS "FP_ARITH_INST_RETIRED:512B_PACKED_SINGLE: ${512B_PACKED_SINGLE_CODE}")
 endif()
 
-set(SEQ_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl seq --num_reps $ENV{NUM_REPS})
+set(FLOPS_1 "")
+set(FLOPS_2 "")
+get_stats(FLOPS_1 1)
+get_stats(FLOPS_2 2)
 
-string(REGEX REPLACE "\n" "" SEQ_COMMAND "${SEQ_COMMAND}")
-message(STATUS "${CODES}")
-message(STATUS "${EXAMPLE}")
-execute_process(
-COMMAND ${SEQ_COMMAND}
-WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
+# Compute diffrence among two iterations of kernel execution and one iteration of kernel
+# execution. This diffrence will be number of FLOPS of single instance of kernel
+# without FLOPS that comes from rest of program
+math(EXPR FLOPS "${FLOPS_2} - ${FLOPS_1}")
 
-set(SIMD_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl simd --num_reps $ENV{NUM_REPS})
-
-string(REGEX REPLACE "\n" "" SIMD_COMMAND "${SIMD_COMMAND}")
-message(STATUS "${CODES}")
-message(STATUS "${EXAMPLE}")
-execute_process(
-COMMAND ${SIMD_COMMAND}
-WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
-
-set(JIT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --impl jit --num_reps $ENV{NUM_REPS})
-
-string(REGEX REPLACE "\n" "" JIT_COMMAND "${JIT_COMMAND}")
-message(STATUS "${CODES}")
-message(STATUS "${EXAMPLE}")
-execute_process(
-COMMAND ${JIT_COMMAND}
-WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)
-
+message(STATUS "FLOPS: ${FLOPS}")

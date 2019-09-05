@@ -1,12 +1,25 @@
+macro(get_events_count EVENT_CODE)
+set(awk_script "{\$1=\$1\;print}")
+execute_process(
+    COMMAND echo ${ANALYSIS_RESULT}
+    COMMAND grep -e ${EVENT_CODE} 
+#    COMMAND grep -e 5302c7  # TODO Events are given by arguments
+    COMMAND awk ${awk_script} # Remove trailing white characters
+    COMMAND cut -d " " -f 1     # Get value of counter given
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    OUTPUT_VARIABLE FLOPS
+)
+endmacro()
+
 function(get_stats ret num_reps mapping)
 set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${num_reps})
-
 list(LENGTH mapping len)
 message(STATUS "len list: ${len}" )
 
 message(STATUS "ARGV0:${ARGV0}")
 message(STATUS "ARGV1:${num_reps}")
 message(STATUS "ARGV2:${mapping}")
+message(STATUS "ARGN:${ARGN}")
 
 string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
 
@@ -17,17 +30,10 @@ WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 OUTPUT_VARIABLE OUTPUT_RESULT
 ERROR_VARIABLE ANALYSIS_RESULT
 )
+# For each of event type (perf counters) get num of evetns and multiply 
+# by number of FLOPS given event means eg. SCALAR*1 , 128B_AVX*4 etc..
+get_events_count("r5302c7")
 
-set(awk_script "{\$1=\$1\;print}")
-execute_process(
-    COMMAND echo ${ANALYSIS_RESULT}
-#    COMMAND grep -e ${SCALAR_SINGLE_CODE} 
-    COMMAND grep -e r5302c7  # TODO Events are given by arguments
-    COMMAND awk ${awk_script} # Remove trailing white characters
-    COMMAND cut -d " " -f 1     # Get value of counter given
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    OUTPUT_VARIABLE FLOPS
-)
 set(${ret} ${FLOPS} PARENT_SCOPE)
 
 endfunction()
@@ -125,11 +131,12 @@ endif()
 
 list(LENGTH EventMapping len)
 message(STATUS "len list: ${len}" )
+message(STATUS "list: ${EventMapping}")
 
 set(FLOPS_1 "")
 set(FLOPS_2 "")
-get_stats(FLOPS_1 1 ${EventMapping})
-get_stats(FLOPS_2 2 ${EventMapping})
+get_stats(FLOPS_1 1 "${EventMapping}")
+get_stats(FLOPS_2 2 "${EventMapping}")
 
 # Compute diffrence among two iterations of kernel execution and one iteration of kernel
 # execution. This diffrence will be number of FLOPS of single instance of kernel

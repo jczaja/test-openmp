@@ -1,9 +1,11 @@
 macro(get_events_count EVENT_CODE)
 set(awk_script "{\$1=\$1\;print}")
+
+string(REGEX REPLACE "\n$" "" EVENT_VAR "${EVENT_CODE}")
+
 execute_process(
     COMMAND echo ${ANALYSIS_RESULT}
-    COMMAND grep -e ${EVENT_CODE} 
-#    COMMAND grep -e 5302c7  # TODO Events are given by arguments
+    COMMAND grep -e ${EVENT_VAR}
     COMMAND awk ${awk_script} # Remove trailing white characters
     COMMAND cut -d " " -f 1     # Get value of counter given
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -14,12 +16,6 @@ endmacro()
 function(get_stats ret num_reps mapping)
 set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${num_reps})
 list(LENGTH mapping len)
-message(STATUS "len list: ${len}" )
-
-message(STATUS "ARGV0:${ARGV0}")
-message(STATUS "ARGV1:${num_reps}")
-message(STATUS "ARGV2:${mapping}")
-message(STATUS "ARGN:${ARGN}")
 
 string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
 
@@ -32,10 +28,22 @@ ERROR_VARIABLE ANALYSIS_RESULT
 )
 # For each of event type (perf counters) get num of evetns and multiply 
 # by number of FLOPS given event means eg. SCALAR*1 , 128B_AVX*4 etc..
-get_events_count("r5302c7")
+set(TOTAL_FLOPS "0")
+foreach(element ${mapping})
+# Get element &
+# split into two
+separate_arguments(element)
+list(GET element 0 var1) # event code: r53..
+list(GET element 1 var2) # meaning in FLOPS : 1,2,4,8...
+# call counting
+get_events_count(${var1})
+# multiplication: event counter * meaning of event in FLOPS = Total flops for that event
+math(EXPR FLOPS "${FLOPS} * ${var2}")
+# accumulate all FLOPS from all events
+math(EXPR TOTAL_FLOPS "${TOTAL_FLOPS} + ${FLOPS}")
+endforeach()
 
-set(${ret} ${FLOPS} PARENT_SCOPE)
-
+set(${ret} ${TOTAL_FLOPS} PARENT_SCOPE)
 endfunction()
 
 
@@ -130,8 +138,6 @@ list(APPEND EventMapping "${512B_PACKED_SINGLE_CODE} 16")
 endif()
 
 list(LENGTH EventMapping len)
-message(STATUS "len list: ${len}" )
-message(STATUS "list: ${EventMapping}")
 
 set(FLOPS_1 "")
 set(FLOPS_2 "")

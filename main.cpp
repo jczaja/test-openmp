@@ -48,7 +48,7 @@ struct platform_info
     unsigned int num_total_phys_cores;
     float tsc_ghz;
     unsigned long long max_bandwidth; 
-    unsigned int flopc; // Floating point operations per cycle
+    float gflops; // Giga Floating point operations per second
 };
 
 class nn_hardware_platform
@@ -119,6 +119,7 @@ class nn_hardware_platform
 
 #endif
         }
+
     // Function computing percentage of theretical efficiency of HW capabilities
     float compute_theoretical_efficiency(unsigned long long start_time, unsigned long long end_time, unsigned long long num_fmas)
     {
@@ -136,7 +137,7 @@ class nn_hardware_platform
        pi.num_total_phys_cores = m_num_total_phys_cores;
        pi.tsc_ghz = m_tsc_ghz;
        pi.max_bandwidth = m_max_bandwidth;
-       pi.flopc = m_fmaspc*m_num_total_phys_cores;      //TODO(jczaja): For xeon are there two ALU per physical core? 
+       pi.gflops = m_fmaspc*m_num_total_phys_cores*m_tsc_ghz;      //TODO(jczaja): For xeon are there two ALU per physical core?
     }
     private:
         long m_num_logical_processors;
@@ -359,7 +360,7 @@ void simd_sum(float& result, const float* X, int num_classes)
 void run_cpu_test( platform_info& pi)
 {
   //TODO(jczaja): Implement benchmark eg. FMA's based reduction code
-  std::cout << " Maximal Floating point operation per cycles: " << pi.flopc << " [FLOP/cycle]" << std::endl;
+  std::cout << " Maximal Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 }
 
 
@@ -475,7 +476,7 @@ int main(int argc, char** argv)
     platform_info pi;
     machine.get_platform_info(pi);
 
-    // Memory thoughput test
+    // CPU thoughput test
     if (FLAGS_cputest) {
        run_cpu_test(pi);
        return 0;

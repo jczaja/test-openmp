@@ -15,7 +15,6 @@ find_path(GFLAGS_INCLUDES NAMES gflags.h PATHS /usr/include/gflags/)
 message("GFLAGS INCLUDES: ${GFLAGS_INCLUDES}")
 include_directories(SYSTEM ${GFLAGS_INCLUDES})
 
-
 find_package(OpenMP)
 if(OPENMP_FOUND)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -78,6 +77,14 @@ DEPENDS ${PERFMON} test-openmp-gomp
 
 endif(PERF)
 
+# roofline needs memtest and cputest
+# It is also using gnuplot for generation of script
+# it does need memory throughput [GB/sec]
+# and cpu throughput [GFLOPS/sec]
+add_custom_target(
+roofline
+COMMAND cmake -DMEMORY_THROUGHPUT="30" -DCPU_THROUGHPUT="100" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
+)
 
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)

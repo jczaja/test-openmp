@@ -77,14 +77,6 @@ DEPENDS ${PERFMON} test-openmp-gomp
 
 endif(PERF)
 
-# roofline needs memtest and cputest
-# It is also using gnuplot for generation of script
-# it does need memory throughput [GB/sec]
-# and cpu throughput [GFLOPS/sec]
-add_custom_target(
-roofline
-COMMAND cmake -DMEMORY_THROUGHPUT="30" -DCPU_THROUGHPUT="100" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
-)
 
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
@@ -105,3 +97,29 @@ add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --ch
 add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
 add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
+
+# roofline needs memtest and cputest
+# It is also using gnuplot for generation of script
+# it does need memory throughput [GB/sec]
+# and cpu throughput [GFLOPS/sec]
+add_custom_target(
+memtest
+COMMENT "Performing peak memory test:"
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 6 | tee memtest.txt
+DEPENDS test-openmp-gomp
+VERBATIM
+)
+
+add_custom_target(
+cputest
+COMMENT "Performing peak cpu test:"
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest | grep -e "Maximal" | cut -d " " -f 8 | tee cputest.txt
+DEPENDS test-openmp-gomp
+VERBATIM
+)
+
+add_custom_target(
+roofline
+COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
+DEPENDS memtest cputest
+)

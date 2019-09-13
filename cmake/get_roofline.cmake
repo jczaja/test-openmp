@@ -17,6 +17,9 @@ endmacro()
 
 find_package(Gnuplot REQUIRED)
 
+file(STRINGS ${CMAKE_BINARY_DIR}/memtest.txt MEMORY_THROUGHPUT)
+file(STRINGS ${CMAKE_BINARY_DIR}/cputest.txt CPU_THROUGHPUT)
+
 create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}")
 # Execute gnuplot using generated script
 execute_process(

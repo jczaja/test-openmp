@@ -17,8 +17,14 @@ endmacro()
 
 find_package(Gnuplot REQUIRED)
 
+file(STRINGS ${CMAKE_BINARY_DIR}/work.txt WORK)
+file(STRINGS ${CMAKE_BINARY_DIR}/traffic.txt MEMORY_TRAFFIC)
 file(STRINGS ${CMAKE_BINARY_DIR}/memtest.txt MEMORY_THROUGHPUT)
 file(STRINGS ${CMAKE_BINARY_DIR}/cputest.txt CPU_THROUGHPUT)
+
+# Compute operational intensity
+math(EXPR OI "${WORK}/${MEMORY_TRAFFIC}")
+message(STATUS "Operational Intensity ${OI}")
 
 create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}")
 # Execute gnuplot using generated script

@@ -70,9 +70,10 @@ ExternalProject_Add(
 
 add_custom_target(
 work
-COMMAND cmake -DPERFMON=${PERFMON} -E env NUM_REPS=\${NUM_REPS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake
+COMMAND cmake -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
+VERBATIM
 )
 
 endif(PERF)
@@ -88,15 +89,23 @@ set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-target_link_libraries(test-openmp-gomp ${MKL_LIBRARIES} m ${GFLAGS_LIB})
+target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB})
 
-add_test( b1a ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp )
-add_test( b1_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 1 --channel_size 50 )
-add_test( b2_c1000 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1000 --num_reps 1)
-add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1007 --num_reps 2)
-add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
-add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
-add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
+# Memory traffic counting build
+add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DMEMORY_TRAFFIC_COUNT")
+target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
+
+
+# to compute operational intensity we need to count memory
+# traffic and work(FLOPS needed for algorithm execution)
+add_custom_target(
+traffic 
+COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
+COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
+DEPENDS test-memory-traffic 
+VERBATIM
+)
 
 # roofline needs memtest and cputest
 # It is also using gnuplot for generation of script
@@ -114,12 +123,22 @@ add_custom_target(
 cputest
 COMMENT "Performing peak cpu test:"
 COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest | grep -e "Maximal" | cut -d " " -f 8 | tee cputest.txt
-DEPENDS test-openmp-gomp
+DEPENDS test-openmp-gomp 
 VERBATIM
 )
 
 add_custom_target(
 roofline
 COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
-DEPENDS memtest cputest
+DEPENDS memtest cputest traffic work
 )
+
+
+# Unit tests
+add_test( b1a ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp )
+add_test( b1_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 1 --channel_size 50 )
+add_test( b2_c1000 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1000 --num_reps 1)
+add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --channel_size 1007 --num_reps 2)
+add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
+add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
+add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)

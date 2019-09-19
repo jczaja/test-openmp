@@ -17,10 +17,10 @@ Measuring Memory traffic
 LLC-loads for reading data
 LLC-stores for writting data
 
-So first we measure 0 repretiion of kernel with 
-
 perf -- from C++ , perf event for selected hardware event.
 
 LLC to DRAM , prefetcher?
 
 cmake math expr division seem to work in integer domain
+
+Memory bound for small data comparing to cacheline

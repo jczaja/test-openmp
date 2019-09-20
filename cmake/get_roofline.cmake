@@ -8,11 +8,15 @@ set(script "${script}\n set style line LINE_ROOF lt 1 lw 6 lc rgb \"blue\"")
 set(script "${script}\n set xrange[0:10]")
 set(script "${script}\n set yrange[0:${CPU_THRGHPT}*1.1]")
 set(script "${script}\n min(x,y) = x < y ? x : y")
+set(script "${script}\n rigid_point = ${CPU_THROUGHPUT}/${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n mem_roof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n cpu_roof = ${CPU_THROUGHPUT}")          # cpu_roofline
 set(script "${script}\n set output \"roofline.png\"")
 set(script "${script}\n roofline(x) = min(mem_roof(x),cpu_roof)")
 set(script "${script}\n set arrow from ${OI},0 to ${OI},roofline(${OI}) nohead dt 2")
+set(script "${script}\n set label \"compute bound\" at rigid_point,cpu_roof + 2 textcolor \"blue\"")
+set(script "${script}\n set angles degrees")
+set(script "${script}\n set label \"memory bound\" at rigid_point/2,mem_roof(rigid_point/2) + 2 textcolor \"blue\" rotate by atan(${MEMORY_THRGHPT})") 
 set(script "${script}\n plot roofline(x) ls LINE_ROOF")
 file(WRITE "${CMAKE_BINARY_DIR}/roofline.plot" "${script}")
 endmacro()

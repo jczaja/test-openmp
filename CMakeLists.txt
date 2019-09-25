@@ -128,9 +128,17 @@ VERBATIM
 )
 
 add_custom_target(
+runtime
+COMMENT "Performing runtime test"
+COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+DEPENDS test-openmp-gomp 
+VERBATIM
+)
+
+add_custom_target(
 roofline
 COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
-DEPENDS memtest cputest traffic work
+DEPENDS memtest cputest traffic work runtime
 )
 
 

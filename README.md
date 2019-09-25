@@ -24,3 +24,13 @@ LLC to DRAM , prefetcher?
 cmake math expr division seem to work in integer domain
 
 Memory bound for small data comparing to cacheline
+
+
+Perform kernel till it is at least one minute runtime.
+
+Check execution of kernel of one time if execution time is less that one monute then
+double repetitions. For extrenly small kernels requested num_repetitions may be bigger
+that size of int. Small values are still evaluated further
+
+How to compute runtime performance
+

@@ -500,7 +500,7 @@ int main(int argc, char** argv)
 //     std::cout << "TSC:" << pi.tsc_ghz * 1000000000.0f<< " [cycles]" << std::endl; 
  
     double runtime_s = runtime / pi.tsc_ghz / 1000000000.0f;       
-    std::cout << "RUNTIME: " << runtime_s << " [s]" << std::endl;
+    std::cout << "RUNTIME[cycles]: " << runtime <<  " RUNTIME[s]: " << runtime_s << std::endl;
 
 	return 0;
 }

@@ -102,9 +102,8 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 -batch_size=\${N} --channel_size=\${C} --height=\${H} --width=\${W} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
 DEPENDS test-memory-traffic 
-VERBATIM
 )
 
 # roofline needs memtest and cputest
@@ -130,9 +129,8 @@ VERBATIM
 add_custom_target(
 runtime
 COMMENT "Performing runtime test"
-COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+COMMAND cmake -DN=\${N} -DC=\${C} -DH=\${H} -DW=\${W} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
-VERBATIM
 )
 
 add_custom_target(
@@ -140,7 +138,6 @@ roofline
 COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
 DEPENDS memtest cputest traffic work runtime
 )
-
 
 # Unit tests
 add_test( b1a ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp )

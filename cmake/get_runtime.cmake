@@ -5,7 +5,7 @@ endfunction()
 
 
 function(execute_runtime num_reps total_time_c total_time_s)
-execute_process(COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --num_reps ${num_reps} 
+execute_process(COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --num_reps ${num_reps} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} 
 COMMAND grep -e "RUNTIME"
 COMMAND cut -d " " -f 2,4
 OUTPUT_VARIABLE __times)

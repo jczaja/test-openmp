@@ -496,9 +496,6 @@ int main(int argc, char** argv)
 
     auto runtime = Kernel(FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
 
-//     std::cout << "RUNTIME:" << runtime << " [cycles]" << std::endl; 
-//     std::cout << "TSC:" << pi.tsc_ghz * 1000000000.0f<< " [cycles]" << std::endl; 
- 
     double runtime_s = runtime / pi.tsc_ghz / 1000000000.0f;       
     std::cout << "RUNTIME[cycles]: " << runtime <<  " RUNTIME[s]: " << runtime_s << std::endl;
 

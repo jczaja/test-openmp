@@ -49,7 +49,7 @@ class MemoryTraffic
     ioctl(fd_, PERF_EVENT_IOC_ENABLE, 0);
     return *this;
   }
-  
+
   inline long long StopCounting(void) {
     ioctl(fd_, PERF_EVENT_IOC_DISABLE, 0);
     long long count;

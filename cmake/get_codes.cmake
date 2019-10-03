@@ -6,6 +6,7 @@ string(REGEX REPLACE "\n$" "" EVENT_VAR "${EVENT_CODE}")
 execute_process(
     COMMAND echo ${ANALYSIS_RESULT}
     COMMAND grep -e ${EVENT_VAR}
+    COMMAND sed  "s:,::g" 
     COMMAND awk ${awk_script} # Remove trailing white characters
     COMMAND cut -d " " -f 1     # Get value of counter given
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -14,7 +15,8 @@ execute_process(
 endmacro()
 
 function(get_stats ret num_reps mapping)
-set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --algo=${algo} --num_reps ${num_reps})
+set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --batch_size=${N}
+  --channel_size=${C} --height=${H} --width=${W} --algo=${algo} --num_reps ${num_reps})
 list(LENGTH mapping len)
 
 string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
@@ -141,6 +143,7 @@ list(LENGTH EventMapping len)
 
 set(FLOPS_1 "")
 set(FLOPS_2 "")
+
 get_stats(FLOPS_1 1 "${EventMapping}")
 get_stats(FLOPS_2 2 "${EventMapping}")
 

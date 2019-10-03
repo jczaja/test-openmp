@@ -70,10 +70,10 @@ ExternalProject_Add(
 
 add_custom_target(
 work
-COMMAND cmake -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
+COMMAND ${CMAKE_COMMAND} -E echo N=\${N} C=\${C} H=\${H} W=\${W} 
+COMMAND ${CMAKE_COMMAND} -DN=\${N} -DC=\${C} -DH=\${H} -DW=\${W} -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
-VERBATIM
 )
 
 endif(PERF)

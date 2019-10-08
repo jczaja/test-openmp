@@ -20,6 +20,8 @@ class MemoryTraffic
     memset(&pe_, 0, sizeof(struct perf_event_attr));
     pe_.type = PERF_TYPE_HARDWARE;
     pe_.config = PERF_COUNT_HW_CACHE_MISSES; 
+//    pe_.type = PERF_TYPE_RAW;
+//    pe_.config = 0x200; 
     pe_.disabled = 1;
     pe_.exclude_kernel = 1; // exclude events taking place in kernel
     pe_.exclude_hv = 1;     // Exclude hypervisor
@@ -44,16 +46,21 @@ class MemoryTraffic
     close(fd_);
   }
 
-  inline MemoryTraffic& StartCounting(void) {
+  inline void StartCounting(void) {
     ioctl(fd_, PERF_EVENT_IOC_RESET, 0);
     ioctl(fd_, PERF_EVENT_IOC_ENABLE, 0);
-    return *this;
+    return;
   }
 
   inline long long StopCounting(void) {
     ioctl(fd_, PERF_EVENT_IOC_DISABLE, 0);
-    long long count;
-    read(fd_, &count, sizeof(long long));
+    long long count = 0;
+    auto num_reads = read(fd_, &count, sizeof(long long));
+
+    if (num_reads == -1) {
+      throw "ERROR reading : PERF_COUNT_HW_CACHE_MISSES";
+    }
+    
     // LLC miss * linesize is rough memory traffic
     return count*llc_cache_linesize_;
   }

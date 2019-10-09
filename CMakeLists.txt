@@ -126,9 +126,24 @@ DEPENDS test-openmp-gomp
 VERBATIM
 )
 
+# Optional target trying disable turbo boost 
+# for intel pstate driver
+add_custom_target(
+disable_turbo_boost
+COMMENT "Disabling TURBO BOOST using intel pstate"
+COMMAND cmake -DVAL="1" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake 
+)
+
+# Optional target trying disable turbo boost 
+# for intel pstate driver
+add_custom_target(
+enable_turbo_boost
+COMMENT "Enabling TURBO BOOST using intel pstate"
+COMMAND cmake -DVAL="0" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake )
+
 add_custom_target(
 runtime
-COMMENT "Performing runtime test"
+COMMENT "Performing runtime test (Make sure TURBO BOOST is disabled!)"
 COMMAND cmake -DN=\${N} -DC=\${C} -DH=\${H} -DW=\${W} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
 )

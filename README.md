@@ -38,3 +38,7 @@ To much memory movment if return value straing to cout
 
 disable turbo boost for good runtime measures
 enable turbo boost
+
+LLC -> DRAM does not account for pre-fetcher
+
+Cold measurement and warm measurement

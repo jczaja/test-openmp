@@ -2,28 +2,38 @@
 #define _MYKERNEL
 
 #include <string>
+#include <toolbox.h>
+
 class Kernel
 {
  public:
   // Initialization
   // Params: dimensions
-  Kernel(int n, int c, int h, int w);
+  Kernel(platform_info &pi, int n, int c, int h, int w);
 
   // Measured Execution of kernel
   // params: number of repetitions to execute 
   // returns: total time in cycles as measured by TSC
-  unsigned long long Run(int num_reps);
+  void Run(int num_reps);
 
-  // cleaning up
-  ~Kernel();
+  // cleaning up and printing result
+  ~Kernel() {
+    std::cout << "Computed sum: " << result_ << std::endl;
+    free(buffer_);
+    buffer_ = nullptr;
+  }
      
   std::string name() {
     return std::string("Sequence Sum");
   }
+ protected:
+   void RunSingle(void);
 
  private:
+   unsigned long long tsc_ghz_;
    unsigned int sized_;
    float *buffer_;
+   float result_; 
 };
 
 #endif

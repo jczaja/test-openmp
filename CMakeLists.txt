@@ -89,6 +89,7 @@ set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DRUNTIME_TEST")
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB})
 
 # Memory traffic counting build

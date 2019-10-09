@@ -38,118 +38,7 @@ DEFINE_int32(width, 1,
 DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
-/////////////////////////////////////////
-struct platform_info
-{
-    long num_logical_processors;
-    long num_physical_processors_per_socket;
-    long num_hw_threads_per_socket;
-    unsigned int num_ht_threads; 
-    unsigned int num_total_phys_cores;
-    float tsc_ghz;
-    unsigned long long max_bandwidth; 
-    float gflops; // Giga Floating point operations per second
-};
 
-class nn_hardware_platform
-{
-    public:
-        nn_hardware_platform() : m_num_logical_processors(0), m_num_physical_processors_per_socket(0), m_num_hw_threads_per_socket(0) ,m_num_ht_threads(1), m_num_total_phys_cores(1), m_tsc_ghz(0), m_fmaspc(0)
-        {
-#ifdef __linux__
-            m_num_logical_processors = sysconf(_SC_NPROCESSORS_ONLN);
-        
-            m_num_physical_processors_per_socket = 0;
-
-            std::ifstream ifs;
-            ifs.open("/proc/cpuinfo"); 
-
-            // If there is no /proc/cpuinfo fallback to default scheduler
-            if(ifs.good() == false) {
-                m_num_physical_processors_per_socket = m_num_logical_processors;
-                assert(0);  // No cpuinfo? investigate that
-                return;   
-            }
-            std::string cpuinfo_content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-            std::stringstream cpuinfo_stream(cpuinfo_content);
-            std::string cpuinfo_line;
-            std::string cpu_name;
-            while(std::getline(cpuinfo_stream,cpuinfo_line,'\n')){
-                if((m_num_physical_processors_per_socket == 0) && (cpuinfo_line.find("cpu cores") != std::string::npos)) {
-                    // convert std::string into number eg. skip colon and after it in the same line  should be number of physical cores per socket
-                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find(":") + 1) ) >> m_num_physical_processors_per_socket; 
-                }
-                if(cpuinfo_line.find("siblings") != std::string::npos) {
-                    // convert std::string into number eg. skip colon and after it in the same line  should be number of HW threads per socket
-                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find(":") + 1) ) >> m_num_hw_threads_per_socket; 
-                }
-
-                if(cpuinfo_line.find("model") != std::string::npos) {
-                    cpu_name = cpuinfo_line;
-                    // convert std::string into number eg. skip colon and after it in the same line  should be number of HW threads per socket
-                    std::stringstream( cpuinfo_line.substr(cpuinfo_line.find("@") + 1) ) >> m_tsc_ghz; 
-                }
-                
-                // determine instruction set (AVX, AVX2, AVX512)
-                if(m_fmaspc == 0) {
-                  if (cpuinfo_line.find(" avx") != std::string::npos) {
-                    m_fmaspc = 8;   // On AVX instruction set we have one FMA unit , width of registers is 256bits, so we can do 8 muls and adds on floats per cycle
-                    if (cpuinfo_line.find(" avx2") != std::string::npos) {
-                      m_fmaspc = 16;   // With AVX2 instruction set we have two FMA unit , width of registers is 256bits, so we can do 16 muls and adds on floats per cycle
-                    }
-                    if (cpuinfo_line.find(" avx512") != std::string::npos) {
-                      m_fmaspc = 32;   // With AVX512 instruction set we have two FMA unit , width of registers is 512bits, so we can do 32 muls and adds on floats per cycle
-                    }
-                  } 
-               }
-            }
-
-            // There is cpuinfo, but parsing did not get quite right? Investigate it
-            assert( m_num_physical_processors_per_socket > 0);
-            assert( m_num_hw_threads_per_socket > 0);
-
-            // Calculate how many threads can be run on single cpu core , in case of lack of hw info attributes assume 1
-            m_num_ht_threads =  m_num_physical_processors_per_socket != 0 ? m_num_hw_threads_per_socket/ m_num_physical_processors_per_socket : 1;
-            // calculate total number of physical cores eg. how many full Hw threads we can run in parallel
-            m_num_total_phys_cores = m_num_hw_threads_per_socket != 0 ? m_num_logical_processors / m_num_hw_threads_per_socket * m_num_physical_processors_per_socket : 1;
-
-            std::cout << "Platform:" << std::endl << "  " << cpu_name << std::endl 
-                      << "  number of physical cores: " << m_num_total_phys_cores << std::endl; 
-            ifs.close(); 
-
-#endif
-        }
-
-    // Function computing percentage of theretical efficiency of HW capabilities
-    float compute_theoretical_efficiency(unsigned long long start_time, unsigned long long end_time, unsigned long long num_fmas)
-    {
-      // Num theoretical operations
-      // Time given is there
-      return 100.0*num_fmas/((float)(m_num_total_phys_cores*m_fmaspc))/((float)(end_time - start_time));
-    }
-
-    void get_platform_info(platform_info& pi)
-    {
-       pi.num_logical_processors = m_num_logical_processors; 
-       pi.num_physical_processors_per_socket = m_num_physical_processors_per_socket; 
-       pi.num_hw_threads_per_socket = m_num_hw_threads_per_socket;
-       pi.num_ht_threads = m_num_ht_threads;
-       pi.num_total_phys_cores = m_num_total_phys_cores;
-       pi.tsc_ghz = m_tsc_ghz;
-       pi.max_bandwidth = m_max_bandwidth;
-       pi.gflops = m_fmaspc*m_num_total_phys_cores*m_tsc_ghz;      //TODO(jczaja): For xeon are there two ALU per physical core?
-    }
-    private:
-        long m_num_logical_processors;
-        long m_num_physical_processors_per_socket;
-        long m_num_hw_threads_per_socket;
-        unsigned int m_num_ht_threads;
-        unsigned int m_num_total_phys_cores;
-        float m_tsc_ghz;
-        short int m_fmaspc;
-        unsigned long long m_max_bandwidth;
-};
-/////////////////////////////////////////
 struct maxAFunc : public Xbyak::CodeGenerator {
     maxAFunc()
 {
@@ -494,10 +383,6 @@ int main(int argc, char** argv)
     std::cout << "Height: " << FLAGS_height << std::endl;
     std::cout << "Width: " << FLAGS_width << std::endl;
 
-    auto runtime = Kernel(FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
-
-    double runtime_s = runtime / pi.tsc_ghz / 1000000000.0f;       
-    std::cout << "RUNTIME[cycles]: " << runtime <<  " RUNTIME[s]: " << runtime_s << std::endl;
-
+    Kernel(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
 	return 0;
 }

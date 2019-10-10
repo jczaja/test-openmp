@@ -39,8 +39,8 @@ DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, 
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 
-struct maxAFunc : public Xbyak::CodeGenerator {
-    maxAFunc()
+struct CpuBench : public Xbyak::CodeGenerator {
+    CpuBench()
 {
 #if defined(__x86_64__)
 // calling convention RDI, RSI, RDX, RCX, R8, R9
@@ -54,138 +54,72 @@ struct maxAFunc : public Xbyak::CodeGenerator {
   Xbyak::util::Cpu current_cpu;
   if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
     printf("AVX2 supported!\n");
-  } else {
-    printf("AVX2 not detected!\n");
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+    vfmadd132ps(ymm0,ymm1,ymm2);
+  } else if (current_cpu.has(Xbyak::util::Cpu::tAVX)) {
+    printf("AVX detected!\n");
   }
 
-  mov (rcx,rdx);	
-  push(rbx);
-  shr (rcx,3);  // Divide by 8 (eight floats)
-  shl (rdx,2);  // num of Output elements * size of float (4)
-  shl (rcx,5);  // Trunc to 32 bytes 
-
-
-	// Compute partial maximums
-  vpbroadcastd(ymm0,ptr [rsi]);
-  xor(rax,rax);				// Move offset for next 8 floating point values
-  L("for_i");
-    cmp(rax,rcx);
-    jz("tail");
-    vmovaps(ymm1,ptr [rsi + rax]);  // A
-		add(rax,32);				// Move offset for next 8 floating point values
-		vmaxps(ymm0,ymm0,ymm1);
-    jmp("for_i");
-  // Tail execution
-  L("tail");
-    sub(rdx,rcx);
-    cmp(rdx,16);  
-    jb("seq");
-    vmovaps(xmm2,ptr [rsi + rax]);  // A
-		add(rax,16);				// Move offset for next 4 floating point values
-    sub(rdx,16);
-		vperm2f128(ymm2,ymm2,ymm2,0);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-  L("seq");
-	  cmp(rdx,0);
-    jz("done");	
-		vpbroadcastd(ymm2,ptr [rsi + rax]);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-    sub(rdx,4);
-    add(rax,4);
-    jmp("seq");
-  L("done");
-  // Get within shortlisted buffer maximum
-	vperm2f128(ymm1,ymm0,ymm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,0x1B);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //ymm0[0:31] contains global maximum
-  vmovss(ptr[rdi],xmm0); // Result <-Max(X[.])
-  pop(rbx);
-
-  printf("Generating Max Value code\n");
 #else
         printf("32bit not supported\n");
 #endif
   ret();
 }
 };
-
-struct maxUFunc : public Xbyak::CodeGenerator {
-    maxUFunc()
-{
-#if defined(__x86_64__)
-// calling convention RDI, RSI, RDX, RCX, R8, R9
-// XMM0-7 (ints are passed that way)
-//      RDI - Reference to Result
-//      RSI - PTR to Array
-//      RDX - Num classes 
-
-// Regsters that need to be preserved: RBX,RBP, R12-R15
-
-  Xbyak::util::Cpu current_cpu;
-  if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
-    printf("AVX2 supported!\n");
-  } else {
-    printf("AVX2 not detected!\n");
-  }
-
-  mov (rcx,rdx);	
-  push(rbx);
-  shr (rcx,3);  // Divide by 8 (eight floats)
-  shl (rdx,2);  // num of Output elements * size of float (4)
-  shl (rcx,5);  // Trunc to 32 bytes 
-
-
-	// Compute partial maximums
-  vpbroadcastd(ymm0,ptr [rsi]);
-  xor(rax,rax);				// Move offset for next 8 floating point values
-  L("for_i");
-    cmp(rax,rcx);
-    jz("tail");
-    vmovups(ymm1,ptr [rsi + rax]);  // A
-		add(rax,32);				// Move offset for next 8 floating point values
-		vmaxps(ymm0,ymm0,ymm1);
-    jmp("for_i");
-  // Tail execution
-  L("tail");
-    sub(rdx,rcx);
-    cmp(rdx,16);  
-    jb("seq");
-    vmovups(xmm2,ptr [rsi + rax]);  // A
-		add(rax,16);				// Move offset for next 4 floating point values
-    sub(rdx,16);
-		vperm2f128(ymm2,ymm2,ymm2,0);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-  L("seq");
-	  cmp(rdx,0);
-    jz("done");	
-		vpbroadcastd(ymm2,ptr [rsi + rax]);
-		vmaxps(ymm0,ymm0,ymm2);  //partial maxes in ymm0
-    sub(rdx,4);
-    add(rax,4);
-    jmp("seq");
-  L("done");
-  // Get within shortlisted buffer maximum
-	vperm2f128(ymm1,ymm0,ymm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,0x1B);
-  vmaxps(ymm0,ymm0,ymm1);  //partial maxes in ymm0
-  vpermilps(xmm1,xmm0,1);
-  vmaxps(ymm0,ymm0,ymm1);  //ymm0[0:31] contains global maximum
-  vmovss(ptr[rdi],xmm0); // Result <-Max(X[.])
-  pop(rbx);
-
-  printf("Generating Max Value code\n");
-#else
-        printf("32bit not supported\n");
-#endif
-  ret();
-}
-};
-////////////////////////
-
 
 void seq_max(float& result, const float* X, int num_classes)
 {
@@ -249,7 +183,15 @@ void simd_sum(float& result, const float* X, int num_classes)
 void run_cpu_test( platform_info& pi)
 {
   //TODO(jczaja): Implement benchmark eg. FMA's based reduction code
-  std::cout << " Maximal Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
+  std::cout << " Maximal Theoretical Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
+
+  // Create Kernel 
+  CpuBench benchmark;
+  void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
+
+  // Run kernel in parallel
+  bench_code();
+  std::cout << " Maximal Benchmarked Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 }
 
 

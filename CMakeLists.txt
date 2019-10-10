@@ -122,7 +122,7 @@ VERBATIM
 add_custom_target(
 cputest
 COMMENT "Performing peak cpu test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest | grep -e "Maximal" | cut -d " " -f 8 | tee cputest.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest | grep -e "Maximal" | cut -d " " -f 9 | tee cputest.txt
 DEPENDS test-openmp-gomp 
 VERBATIM
 )

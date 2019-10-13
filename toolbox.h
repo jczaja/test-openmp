@@ -259,9 +259,15 @@ class Runtime : public ToolBox
  public:
   Runtime(unsigned long long tsc_ghz, bool clear_cache = true) : ToolBox(clear_cache), tsc_ghz_(tsc_ghz), start_(0) {}
 
+
   ~Runtime() {
     double total_s = total_ / tsc_ghz_ / 1000000000.0f;       
-    std::cout << "RUNTIME[cycles]: " << total_ <<  " RUNTIME[s]: " << total_s << std::endl;
+    std::cout << "Runtime: " << total_ << "[cycles] "<< total_s << " [s]"<< std::endl;
+  }
+
+  double GetMeasure() {
+    double total_s = total_ / tsc_ghz_ / 1000000000.0f;       
+    return total_s;
   }
 
   inline void Start() {
@@ -281,6 +287,7 @@ class Runtime : public ToolBox
   unsigned long long tsc_ghz_;
   unsigned long long start_; 
 };
+
 
 
 #endif

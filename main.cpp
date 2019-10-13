@@ -40,7 +40,7 @@ DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 
 struct CpuBench : public Xbyak::CodeGenerator {
-    CpuBench()
+    CpuBench(const int num_fmas, const int num_loops)
 {
 #if defined(__x86_64__)
 // calling convention RDI, RSI, RDX, RCX, R8, R9
@@ -54,66 +54,17 @@ struct CpuBench : public Xbyak::CodeGenerator {
   Xbyak::util::Cpu current_cpu;
   if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
     printf("AVX2 supported!\n");
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
-    vfmadd132ps(ymm0,ymm1,ymm2);
+    mov (rcx, num_loops);
+    L("Loop_over");
+    for(int i=0; i<num_fmas; ++i) {
+      vfmadd132ps(ymm0,ymm1,ymm2);
+    }
+    dec(rcx);
+    jnz("Loop_over");
+
   } else if (current_cpu.has(Xbyak::util::Cpu::tAVX)) {
     printf("AVX detected!\n");
   }
-
 #else
         printf("32bit not supported\n");
 #endif
@@ -177,21 +128,30 @@ void simd_sum(float& result, const float* X, int num_classes)
 //    asm volatile ("END SIMD! <---");
 }
 
-
-
-
 void run_cpu_test( platform_info& pi)
 {
-  //TODO(jczaja): Implement benchmark eg. FMA's based reduction code
-  std::cout << " Maximal Theoretical Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
+  std::cout << " Maximal Theoretical peak performance: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 
   // Create Kernel 
-  CpuBench benchmark;
+  const int num_fmas = 100;
+  const int num_loops = 100;
+  const unsigned long long num_iterations = 1000000;
+  CpuBench benchmark(num_fmas, num_loops);
   void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
 
   // Run kernel in parallel
-  bench_code();
-  std::cout << " Maximal Benchmarked Floating point operation per second: " << pi.gflops << " [GFLOPS/second]" << std::endl;
+  auto rt = Runtime(pi.tsc_ghz, false);
+
+  rt.Start();
+  #pragma omp parallel for num_threads(pi.num_total_phys_cores) 
+  for(unsigned int i=0; i< pi.num_total_phys_cores*num_iterations; ++i) {
+      bench_code();
+  }
+  rt.Stop();
+
+  const double total_work = 8*num_fmas*num_loops*2*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
+  
+  std::cout << "Benchmarked peak performance: " << total_work/rt.GetMeasure() << "[GFLOPS/second]" << std::endl; 
 }
 
 

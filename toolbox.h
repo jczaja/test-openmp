@@ -262,7 +262,7 @@ class Runtime : public ToolBox
 
   ~Runtime() {
     double total_s = total_ / tsc_ghz_ / 1000000000.0f;       
-    std::cout << "Runtime: " << total_ << "[cycles] "<< total_s << " [s]"<< std::endl;
+    std::cout << "Runtime: " << total_ << " [cycles] "<< total_s << " [s]"<< std::endl;
   }
 
   double GetMeasure() {

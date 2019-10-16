@@ -34,7 +34,7 @@ void Kernel::Run(int num_reps)
     mt.StartCounting();
 #endif
 #ifdef RUNTIME_TEST
-    auto rt = Runtime(tsc_ghz_);
+    auto rt = Runtime(tsc_ghz_,false);
 #endif
     for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST

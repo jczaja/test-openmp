@@ -42,3 +42,5 @@ enable turbo boost
 LLC -> DRAM does not account for pre-fetcher
 
 Cold measurement and warm measurement
+
+benchmarking (two not dependant FMA faster tan one). why?

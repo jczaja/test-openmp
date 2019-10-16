@@ -58,6 +58,9 @@ struct CpuBench : public Xbyak::CodeGenerator {
     L("Loop_over");
     for(int i=0; i<num_fmas; ++i) {
       vfmadd132ps(ymm0,ymm1,ymm2);
+      vfmadd132ps(ymm3,ymm4,ymm5);
+//      vfmadd132ps(ymm6,ymm7,ymm0);
+//      vfmadd132ps(ymm1,ymm2,ymm3);
     }
     dec(rcx);
     jnz("Loop_over");
@@ -136,7 +139,9 @@ void run_cpu_test( platform_info& pi)
   const int num_fmas = 100;
   const int num_loops = 100;
   const unsigned long long num_iterations = 1000000;
-  CpuBench benchmark(num_fmas, num_loops);
+  //CpuBench benchmark(num_fmas, num_loops);
+  CpuBench benchmark(num_fmas/2, num_loops);
+  //CpuBench benchmark(num_fmas/4, num_loops);
   void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
 
   // Run kernel in parallel
@@ -149,9 +154,11 @@ void run_cpu_test( platform_info& pi)
   }
   rt.Stop();
 
-  const double total_work = 8*num_fmas*num_loops*2*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
+
+  // Work it work AVX, AVX2 and AVX512
+  const double total_work = 16*num_fmas*num_loops*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
   
-  std::cout << "Benchmarked peak performance: " << total_work/rt.GetMeasure() << "[GFLOPS/second]" << std::endl; 
+  std::cout << "Benchmarked peak performance: " << total_work/rt.GetMeasure() << " [GFLOPS/second]" << std::endl; 
 }
 
 

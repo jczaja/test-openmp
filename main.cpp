@@ -38,6 +38,7 @@ DEFINE_int32(width, 1,
 DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
+DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
 
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
@@ -58,9 +59,11 @@ struct CpuBench : public Xbyak::CodeGenerator {
     L("Loop_over");
     for(int i=0; i<num_fmas; ++i) {
       vfmadd132ps(ymm0,ymm1,ymm2);
-      vfmadd132ps(ymm3,ymm4,ymm5);
-//      vfmadd132ps(ymm6,ymm7,ymm0);
-//      vfmadd132ps(ymm1,ymm2,ymm3);
+      vfmadd132ps(ymm3,ymm1,ymm2);
+      vfmadd132ps(ymm4,ymm1,ymm2);
+      vfmadd132ps(ymm5,ymm1,ymm2);
+      vfmadd132ps(ymm6,ymm1,ymm2);
+      vfmadd132ps(ymm7,ymm1,ymm2);
     }
     dec(rcx);
     jnz("Loop_over");
@@ -136,11 +139,11 @@ void run_cpu_test( platform_info& pi)
   std::cout << " Maximal Theoretical peak performance: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 
   // Create Kernel 
-  const int num_fmas = 100;
+  const int num_fmas = 120;
   const int num_loops = 100;
   const unsigned long long num_iterations = 1000000;
   //CpuBench benchmark(num_fmas, num_loops);
-  CpuBench benchmark(num_fmas/2, num_loops);
+  CpuBench benchmark(num_fmas/6, num_loops);
   //CpuBench benchmark(num_fmas/4, num_loops);
   void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
 
@@ -273,6 +276,9 @@ int main(int argc, char** argv)
     nn_hardware_platform machine;
     platform_info pi;
     machine.get_platform_info(pi);
+
+    // If user requested single core then suppress cores limit
+    pi.num_total_phys_cores = FLAGS_single_core ? 1 : pi.num_total_phys_cores; 
 
     // CPU thoughput test
     if (FLAGS_cputest) {

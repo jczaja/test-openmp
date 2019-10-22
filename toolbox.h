@@ -23,6 +23,7 @@ struct platform_info
     float tsc_ghz;
     unsigned long long max_bandwidth; 
     float gflops; // Giga Floating point operations per second
+    int fmaspc;
 };
 
 class nn_hardware_platform
@@ -111,7 +112,8 @@ class nn_hardware_platform
        pi.num_total_phys_cores = m_num_total_phys_cores;
        pi.tsc_ghz = m_tsc_ghz;
        pi.max_bandwidth = m_max_bandwidth;
-       pi.gflops = m_fmaspc*m_num_total_phys_cores*m_tsc_ghz;      //TODO(jczaja): For xeon are there two ALU per physical core?
+       pi.gflops = m_fmaspc*m_num_total_phys_cores*m_tsc_ghz;      
+       pi.fmaspc = m_fmaspc;
     }
     private:
         long m_num_logical_processors;

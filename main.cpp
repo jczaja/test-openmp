@@ -53,7 +53,47 @@ struct CpuBench : public Xbyak::CodeGenerator {
 // Regsters that need to be preserved: RBX,RBP, R12-R15
 
   Xbyak::util::Cpu current_cpu;
-  if(current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
+  if(current_cpu.has(Xbyak::util::Cpu::tAVX512F)) {
+    printf("AVX-512 supported!\n");
+
+    mov (rcx, num_loops);
+    L("Loop_over");
+    for(int i=0; i<num_fmas; ++i) {
+      vfmadd132ps(zmm0,zmm1,zmm2);
+      vfmadd132ps(zmm3,zmm1,zmm2);
+      vfmadd132ps(zmm4,zmm1,zmm2);
+      vfmadd132ps(zmm5,zmm1,zmm2);
+      vfmadd132ps(zmm6,zmm1,zmm2);
+      vfmadd132ps(zmm7,zmm1,zmm2);
+      vfmadd132ps(zmm8,zmm1,zmm2);
+      vfmadd132ps(zmm9,zmm1,zmm2);
+      vfmadd132ps(zmm10,zmm1,zmm2);
+      vfmadd132ps(zmm11,zmm1,zmm2);
+      vfmadd132ps(zmm12,zmm1,zmm2);
+      vfmadd132ps(zmm13,zmm1,zmm2);
+      vfmadd132ps(zmm14,zmm1,zmm2);
+      vfmadd132ps(zmm15,zmm1,zmm2);
+      vfmadd132ps(zmm16,zmm1,zmm2);
+      vfmadd132ps(zmm17,zmm1,zmm2);
+      vfmadd132ps(zmm18,zmm1,zmm2);
+      vfmadd132ps(zmm19,zmm1,zmm2);
+      vfmadd132ps(zmm20,zmm1,zmm2);
+      vfmadd132ps(zmm21,zmm1,zmm2);
+      vfmadd132ps(zmm22,zmm1,zmm2);
+      vfmadd132ps(zmm23,zmm1,zmm2);
+      vfmadd132ps(zmm24,zmm1,zmm2);
+      vfmadd132ps(zmm25,zmm1,zmm2);
+      vfmadd132ps(zmm26,zmm1,zmm2);
+      vfmadd132ps(zmm27,zmm1,zmm2);
+      vfmadd132ps(zmm28,zmm1,zmm2);
+      vfmadd132ps(zmm29,zmm1,zmm2);
+      vfmadd132ps(zmm30,zmm1,zmm2);
+      vfmadd132ps(zmm31,zmm1,zmm2);
+    }
+    dec(rcx);
+    jnz("Loop_over");
+
+  } else if (current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
     printf("AVX2 supported!\n");
     mov (rcx, num_loops);
     L("Loop_over");
@@ -64,12 +104,68 @@ struct CpuBench : public Xbyak::CodeGenerator {
       vfmadd132ps(ymm5,ymm1,ymm2);
       vfmadd132ps(ymm6,ymm1,ymm2);
       vfmadd132ps(ymm7,ymm1,ymm2);
+      vfmadd132ps(ymm8,ymm1,ymm2);
+      vfmadd132ps(ymm9,ymm1,ymm2);
+      vfmadd132ps(ymm10,ymm1,ymm2);
+      vfmadd132ps(ymm11,ymm1,ymm2);
+      vfmadd132ps(ymm12,ymm1,ymm2);
+      vfmadd132ps(ymm13,ymm1,ymm2);
+      vfmadd132ps(ymm14,ymm1,ymm2);
+      vfmadd132ps(ymm15,ymm1,ymm2);
+      vfmadd132ps(ymm0,ymm1,ymm2);
+      vfmadd132ps(ymm3,ymm1,ymm2);
+      vfmadd132ps(ymm4,ymm1,ymm2);
+      vfmadd132ps(ymm5,ymm1,ymm2);
+      vfmadd132ps(ymm6,ymm1,ymm2);
+      vfmadd132ps(ymm7,ymm1,ymm2);
+      vfmadd132ps(ymm8,ymm1,ymm2);
+      vfmadd132ps(ymm9,ymm1,ymm2);
+      vfmadd132ps(ymm10,ymm1,ymm2);
+      vfmadd132ps(ymm11,ymm1,ymm2);
+      vfmadd132ps(ymm12,ymm1,ymm2);
+      vfmadd132ps(ymm13,ymm1,ymm2);
+      vfmadd132ps(ymm14,ymm1,ymm2);
+      vfmadd132ps(ymm15,ymm1,ymm2);
     }
     dec(rcx);
     jnz("Loop_over");
 
   } else if (current_cpu.has(Xbyak::util::Cpu::tAVX)) {
     printf("AVX detected!\n");
+    mov (rcx, num_loops);
+    L("Loop_over");
+    for(int i=0; i<num_fmas; ++i) {
+      vfmadd132ps(xmm0,xmm1,xmm2);
+      vfmadd132ps(xmm3,xmm1,xmm2);
+      vfmadd132ps(xmm4,xmm1,xmm2);
+      vfmadd132ps(xmm5,xmm1,xmm2);
+      vfmadd132ps(xmm6,xmm1,xmm2);
+      vfmadd132ps(xmm7,xmm1,xmm2);
+      vfmadd132ps(xmm8,xmm1,xmm2);
+      vfmadd132ps(xmm9,xmm1,xmm2);
+      vfmadd132ps(xmm10,xmm1,xmm2);
+      vfmadd132ps(xmm11,xmm1,xmm2);
+      vfmadd132ps(xmm12,xmm1,xmm2);
+      vfmadd132ps(xmm13,xmm1,xmm2);
+      vfmadd132ps(xmm14,xmm1,xmm2);
+      vfmadd132ps(xmm15,xmm1,xmm2);
+      vfmadd132ps(xmm0,xmm1,xmm2);
+      vfmadd132ps(xmm3,xmm1,xmm2);
+      vfmadd132ps(xmm4,xmm1,xmm2);
+      vfmadd132ps(xmm5,xmm1,xmm2);
+      vfmadd132ps(xmm6,xmm1,xmm2);
+      vfmadd132ps(xmm7,xmm1,xmm2);
+      vfmadd132ps(xmm8,xmm1,xmm2);
+      vfmadd132ps(xmm9,xmm1,xmm2);
+      vfmadd132ps(xmm10,xmm1,xmm2);
+      vfmadd132ps(xmm11,xmm1,xmm2);
+      vfmadd132ps(xmm12,xmm1,xmm2);
+      vfmadd132ps(xmm13,xmm1,xmm2);
+      vfmadd132ps(xmm14,xmm1,xmm2);
+      vfmadd132ps(xmm15,xmm1,xmm2);
+    }
+    dec(rcx);
+    jnz("Loop_over");
   }
 #else
         printf("32bit not supported\n");
@@ -139,12 +235,11 @@ void run_cpu_test( platform_info& pi)
   std::cout << " Maximal Theoretical peak performance: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 
   // Create Kernel 
-  const int num_fmas = 120;
+  const int num_fmas = 28*9;
   const int num_loops = 100;
   const unsigned long long num_iterations = 1000000;
   //CpuBench benchmark(num_fmas, num_loops);
-  CpuBench benchmark(num_fmas/6, num_loops);
-  //CpuBench benchmark(num_fmas/4, num_loops);
+  CpuBench benchmark(num_fmas/28, num_loops);
   void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
 
   // Run kernel in parallel
@@ -157,9 +252,7 @@ void run_cpu_test( platform_info& pi)
   }
   rt.Stop();
 
-
-  // Work it work AVX, AVX2 and AVX512
-  const double total_work = 16*num_fmas*num_loops*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
+  const double total_work = pi.fmaspc*num_fmas*num_loops*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
   
   std::cout << "Benchmarked peak performance: " << total_work/rt.GetMeasure() << " [GFLOPS/second]" << std::endl; 
 }
@@ -278,6 +371,7 @@ int main(int argc, char** argv)
     machine.get_platform_info(pi);
 
     // If user requested single core then suppress cores limit
+    pi.gflops = FLAGS_single_core ? pi.gflops/pi.num_total_phys_cores : pi.gflops; 
     pi.num_total_phys_cores = FLAGS_single_core ? 1 : pi.num_total_phys_cores; 
 
     // CPU thoughput test

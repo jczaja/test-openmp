@@ -260,6 +260,9 @@ void run_cpu_test( platform_info& pi)
 
 void run_mem_test(platform_info& pi)
 {
+
+    std::cout << "Threads : " << pi.num_total_phys_cores << std::endl;
+
   // Get 512 MB for source and copy it to 512 MB dst. 
   // Intention is to copy more memory than it can be fead into cache 
   size_t size_of_floats = 128*1024*1024;
@@ -325,8 +328,7 @@ void run_mem_test(platform_info& pi)
 
   std::vector<unsigned long long> mem_nontemp_write_times;
   mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 1));
-  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 2));
-  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 4));
+  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
   auto mem_nontemp_write_t = *(std::min_element(mem_nontemp_write_times.begin(), mem_nontemp_write_times.end()));
   auto nontemp_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Non-Temporal Write Throughput: " << nontemp_write_throughput << " [GB/s]" << std::endl;
@@ -334,8 +336,7 @@ void run_mem_test(platform_info& pi)
 
   std::vector<unsigned long long> mem_write_times;
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 1));
-  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 2));
-  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 4));
+  mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
   auto mem_write_t = *(std::min_element(mem_write_times.begin(), mem_write_times.end()));
   auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
@@ -343,7 +344,7 @@ void run_mem_test(platform_info& pi)
 
   std::vector<unsigned long long> memcpy_times;
   memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 1));
-  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 2));
+  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), pi.num_total_phys_cores));
 
   auto memcpy_t = *(std::min_element(memcpy_times.begin(), memcpy_times.end()));
 

@@ -44,3 +44,6 @@ LLC -> DRAM does not account for pre-fetcher
 Cold measurement and warm measurement
 
 benchmarking (two not dependant FMA faster tan one). why?
+no chain dependency.
+
+It seems throughput of FMA is 0.5

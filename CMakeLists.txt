@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.14)
 project(test-openmp)
 
 include(CheckCXXCompilerFlag)
 include(ExternalProject)
+include(FetchContent)
 
 enable_testing()
 
@@ -40,6 +41,8 @@ else()
 message("OpenMP support missing in compiler")
 endif()
 
+find_package(Git)
+
 if(UNIX)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
@@ -49,6 +52,14 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 add_definitions(-std=c++0x)
 endif()
 endif()
+
+FetchContent_Declare(
+dnnl
+GIT_REPOSITORY https://github.com/intel/mkl-dnn
+GIT_TAG v1.1.1
+GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(dnnl)
 
 find_program(PERF NAMES perf)
 
@@ -82,18 +93,25 @@ endif(PERF)
 add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_library(assembly_dump ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
+add_library(assembly_dump ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
+${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
+#TODO Enable mkl-dnn kernels
+#${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp)
+
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
 set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
-add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DRUNTIME_TEST")
-target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB})
+target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
-add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
+"${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
 

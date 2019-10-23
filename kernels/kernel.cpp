@@ -1,7 +1,10 @@
 #include <iostream>
 #include <x86intrin.h>
-#include<kernels/kernel.h>
+#include<kernels/kernel.hpp>
 #include<toolbox.h>
+
+
+extern std::unordered_map<std::string, BaseKernel*> kernels;
 
 Kernel::Kernel(platform_info &pi, int n, int c, int h, int w) 
     : tsc_ghz_(pi.tsc_ghz), sized_(n*c*h*w)
@@ -54,3 +57,4 @@ void Kernel::Run(int num_reps)
 # endif
 }
 
+static Kernel myobject;

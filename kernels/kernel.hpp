@@ -3,8 +3,9 @@
 
 #include <string>
 #include <toolbox.h>
+#include <kernels/base_kernel.hpp>
 
-class Kernel
+class Kernel : public BaseKernel
 {
  public:
   // Initialization
@@ -24,7 +25,7 @@ class Kernel
   }
      
   std::string name() {
-    return std::string("Sequence Sum");
+    return std::string("sum");
   }
  protected:
    void RunSingle(void);

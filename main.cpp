@@ -15,14 +15,16 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "gflags/gflags.h"
-#include "kernels/kernel.h"
 
 #include <string>
 #include <fstream>
 #include <streambuf>
 #include <sstream>
+#include <unordered_map>
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
+#include "toolbox.h"
+#include "kernels/base_kernel.hpp"
 
 DEFINE_int32(num_reps, 1,
 "Number of repetitions of computations to be performed");
@@ -35,10 +37,12 @@ DEFINE_int32(height, 1,
 DEFINE_int32(width, 1,
 "Width to be used for compuations");
 
-DEFINE_string(algo, "max", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
+DEFINE_string(algo, "sum", "Name of algorithm to execute. Possible values: max, sum, softmax. Default: max");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
+
+std::unordered_map<std::string, BaseKernel*> kernels;
 
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
@@ -393,6 +397,6 @@ int main(int argc, char** argv)
     std::cout << "Height: " << FLAGS_height << std::endl;
     std::cout << "Width: " << FLAGS_width << std::endl;
 
-    Kernel(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
+    //Kernel(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width).Run(FLAGS_num_reps);
 	return 0;
 }

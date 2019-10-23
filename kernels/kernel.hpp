@@ -8,9 +8,13 @@
 class Kernel : public BaseKernel
 {
  public:
+
+  // Registration of kernel
+  Kernel();
+
   // Initialization
   // Params: dimensions
-  Kernel(platform_info &pi, int n, int c, int h, int w);
+  void Init(platform_info &pi, int n, int c, int h, int w);
 
   // Measured Execution of kernel
   // params: number of repetitions to execute 
@@ -24,9 +28,6 @@ class Kernel : public BaseKernel
     buffer_ = nullptr;
   }
      
-  std::string name() {
-    return std::string("sum");
-  }
  protected:
    void RunSingle(void);
 

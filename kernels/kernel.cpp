@@ -1,23 +1,31 @@
 #include <iostream>
+#include <unordered_map>
 #include <x86intrin.h>
 #include<kernels/kernel.hpp>
 #include<toolbox.h>
 
-
 extern std::unordered_map<std::string, BaseKernel*> kernels;
 
-Kernel::Kernel(platform_info &pi, int n, int c, int h, int w) 
-    : tsc_ghz_(pi.tsc_ghz), sized_(n*c*h*w)
+Kernel::Kernel()
 {
-    int ret = posix_memalign((void**)&buffer_,64,n*c*h*w*sizeof(float));
-    if (ret != 0) {
-      std::cout << "Allocation error of bottom!" << std::endl;
-      exit(-1);
-    }
-    // Init with some random data
-    for(unsigned int i=0; i< (unsigned int )n*c*h*w; ++i) {
-        buffer_[i] = i%13;
-    }
+  // Register kernel
+  kernels[std::string("sum")] = this;
+}
+
+void Kernel::Init(platform_info &pi, int n, int c, int h, int w)
+{
+  tsc_ghz_ = pi.tsc_ghz;
+  sized_ = n*c*h*w;
+
+  int ret = posix_memalign((void**)&buffer_,64,n*c*h*w*sizeof(float));
+  if (ret != 0) {
+    std::cout << "Allocation error of bottom!" << std::endl;
+    exit(-1);
+  }
+  // Init with some random data
+  for(unsigned int i=0; i< (unsigned int )n*c*h*w; ++i) {
+      buffer_[i] = i%13;
+  }
 }
 
 inline void Kernel::RunSingle(void)

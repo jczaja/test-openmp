@@ -77,6 +77,7 @@ ExternalProject_Add(
     CONFIGURE_COMMAND   ""
     BUILD_COMMAND       "make"
     INSTALL_COMMAND     ""
+    GIT_SHALLOW         TRUE
 )
 
 add_custom_target(
@@ -94,9 +95,8 @@ add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_library(assembly_dump ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
-${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
-#TODO Enable mkl-dnn kernels
-#${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp)
 
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")

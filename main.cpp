@@ -37,12 +37,15 @@ DEFINE_int32(height, 1,
 DEFINE_int32(width, 1,
 "Width to be used for compuations");
 
-DEFINE_string(algo, "sum", "Name of algorithm to execute. Possible values: sum. Default: sum");
+std::unordered_map<std::string, BaseKernel*> kernels;
+
+DEFINE_string(algo, "sum", "Which algorithm to evaluate. Possible values: sum . Default: sum");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
 
-std::unordered_map<std::string, BaseKernel*> kernels;
+
+
 
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
@@ -401,6 +404,7 @@ int main(int argc, char** argv)
       std::cerr << "ERROR: Selected algorithm: " << FLAGS_algo << " not available!" << std::endl;
       return -1;
     } else {
+       kernels[FLAGS_algo]->Init(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width);
        kernels[FLAGS_algo]->Run(FLAGS_num_reps);
     }
 

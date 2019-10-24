@@ -4,7 +4,7 @@
 #include<kernels/kernel.hpp>
 #include<toolbox.h>
 
-extern std::unordered_map<std::string, BaseKernel*> kernels;
+REGISTER_KERNEL(Kernel);
 
 Kernel::Kernel()
 {
@@ -65,4 +65,3 @@ void Kernel::Run(int num_reps)
 # endif
 }
 
-static Kernel myobject;

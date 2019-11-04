@@ -47,3 +47,5 @@ benchmarking (two not dependant FMA faster tan one). why?
 no chain dependency.
 
 It seems throughput of FMA is 0.5
+
+Memory object where allocated on heap to foul memory prefetchet

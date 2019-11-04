@@ -3,6 +3,7 @@
 
 #include <string>
 
+#define COMMA ,
 #define REGISTER_KERNEL(T) extern std::unordered_map<std::string, BaseKernel*> kernels; \
                             static T objectT;
 

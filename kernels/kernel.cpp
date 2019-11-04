@@ -30,16 +30,19 @@ void Kernel::Init(platform_info &pi, int n, int c, int h, int w)
 
 inline void Kernel::RunSingle(void)
 {
+# ifdef GENERATE_ASSEMBLY
+    asm volatile ("BEGIN sum Kernel");
+# endif
   for(unsigned int i = 0; i< sized_; ++i) {
     result_ += buffer_[i];
   }
+# ifdef GENERATE_ASSEMBLY
+    asm volatile ("END sum Kernel");
+# endif
 }
 
 void Kernel::Run(int num_reps)
 {
-# ifdef GENERATE_ASSEMBLY
-    asm volatile ("BEGIN Kernel");
-# endif
 #ifdef MEMORY_TRAFFIC_COUNT
     auto mt = MemoryTraffic();
     mt.StartCounting();
@@ -60,8 +63,5 @@ void Kernel::Run(int num_reps)
     mt.StopCounting();
 #endif
 
-# ifdef GENERATE_ASSEMBLY
-    asm volatile ("END Kernel");
-# endif
 }
 

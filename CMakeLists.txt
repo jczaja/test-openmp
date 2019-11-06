@@ -71,7 +71,7 @@ SET(PERFMON "extern_perfmon")
 ExternalProject_Add(
     ${PERFMON}
     GIT_REPOSITORY      "https://git.code.sf.net/p/perfmon2/libpfm4.git"
-    GIT_TAG             "8f2208a1ff62e8ef6403d246042e64f941f4f729"   
+    GIT_TAG             "v4.10.1"   
     SOURCE_DIR          "extern_perfmon"
     BUILD_IN_SOURCE     "True"
     UPDATE_COMMAND      ""

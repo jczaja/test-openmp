@@ -21,11 +21,15 @@ class Kernel : public BaseKernel
   // returns: total time in cycles as measured by TSC
   void Run(int num_reps);
 
+  void ShowInfo(void);
+
   // cleaning up and printing result
   ~Kernel() {
-    std::cout << "Computed sum: " << result_ << std::endl;
-    free(buffer_);
-    buffer_ = nullptr;
+    if (buffer_) {
+      std::cout << "Computed sum: " << result_ << std::endl;
+      free(buffer_);
+      buffer_ = nullptr;
+    }
   }
      
  protected:

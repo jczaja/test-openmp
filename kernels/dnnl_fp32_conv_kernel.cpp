@@ -3,13 +3,13 @@
 #include <x86intrin.h>
 #include<kernels/dnnl_fp32_conv_kernel.hpp>
 
-REGISTER_KERNEL(DNNLKernel<96 COMMA 11 COMMA 11>);
+REGISTER_KERNEL(DNNLKernel<NumF COMMA HeightF COMMA WidthF>);
 
 template<unsigned int NF, unsigned int HF, unsigned int WF>
 DNNLKernel<NF, HF, WF>::DNNLKernel()
 {
   // Register kernel
-  kernels[std::string("dnnl_conv_")+std::to_string(NF)+"_"+std::to_string(HF)+"_"+std::to_string(WF)] = this;
+  kernels[std::string("dnnl_nchw_conv")] = this;
 }
 
 
@@ -30,7 +30,7 @@ void DNNLKernel<NF, HF, WF>::Init(platform_info &pi, int n, int c, int h, int w)
 
   // Allocate weights & bias
   auto num_filters = NF;
-  dnnl::memory::dims weights_tz = {num_filters, c, 11, 11};
+  dnnl::memory::dims weights_tz = {num_filters, c, HF, WF};
   dnnl::memory::dims bias_tz = {num_filters};
   dnnl::memory::dims strides = {4,4};
   dnnl::memory::dims padding = {0,0};
@@ -72,9 +72,33 @@ void DNNLKernel<NF, HF, WF>::InitializeData(float* ptr, unsigned int sized)
 }
 
 template<unsigned int NF, unsigned int HF, unsigned int WF>
+void DNNLKernel<NF, HF, WF>::ShowInfo(void)
+{
+  auto src_md = src_->get_desc();
+  auto dims = src_md.data.dims;
+  int n = dims[0];
+  int c = dims[1];
+  int h = dims[2];
+  int w = dims[3];
+
+  std::cout << std::endl << " DNNL NCHW conv :" << std::endl << std::endl <<
+  "   batch Size: "<< n << std::endl <<
+  "   channel_size: "<< c << std::endl <<
+  "   height: "<< h << std::endl <<
+  "   width: "<< w << std::endl <<
+  "   num_filters: " << NF << std::endl <<
+  "   filter height: " << HF << std::endl <<
+  "   filter_width: " << WF << std::endl << std::endl;
+}
+
+template<unsigned int NF, unsigned int HF, unsigned int WF>
 DNNLKernel<NF, HF, WF>::~DNNLKernel()
 {
-   std::cout << "DNNL conv 11x11 NCHW First element: " << static_cast<float*>(dst_->get_data_handle())[0] << std::endl;
+  if (dst_ ) {
+   std::cout << "DNNL NCHW conv " << std::to_string(NF) << "x" << 
+       std::to_string(HF) << "x" << std::to_string(WF) << 
+       " NCHW First element: " << static_cast<float*>(dst_->get_data_handle())[0] << std::endl;
+  }
 }
 
 template<unsigned int NF, unsigned int HF, unsigned int WF>

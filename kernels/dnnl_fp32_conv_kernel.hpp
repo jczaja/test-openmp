@@ -26,6 +26,8 @@ class DNNLKernel : public BaseKernel {
   // cleaning up and printing result
   ~DNNLKernel();
 
+  void ShowInfo(void);
+
  protected:
    void RunSingle(void);
    void InitializeData(float* ptr, unsigned int sized);

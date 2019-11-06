@@ -6,7 +6,7 @@
 
 REGISTER_KERNEL(Kernel);
 
-Kernel::Kernel()
+Kernel::Kernel() : buffer_(nullptr)
 {
   // Register kernel
   kernels[std::string("sum")] = this;
@@ -26,6 +26,11 @@ void Kernel::Init(platform_info &pi, int n, int c, int h, int w)
   for(unsigned int i=0; i< (unsigned int )n*c*h*w; ++i) {
       buffer_[i] = i%13;
   }
+}
+
+void Kernel::ShowInfo(void)
+{
+    std::cout << std::endl << " Sum (size=" << sized_ << ")" << std::endl << std::endl;
 }
 
 inline void Kernel::RunSingle(void)

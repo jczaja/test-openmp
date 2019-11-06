@@ -53,6 +53,7 @@ add_definitions(-std=c++0x)
 endif()
 endif()
 
+
 FetchContent_Declare(
 dnnl
 GIT_REPOSITORY https://github.com/intel/mkl-dnn
@@ -80,10 +81,42 @@ ExternalProject_Add(
     GIT_SHALLOW         TRUE
 )
 
+# Variables that may be needed for certain algorithms
+if (NOT DEFINED N)
+set(N "1")
+endif()
+
+if (NOT DEFINED C)
+set(C "1")
+endif()
+
+if (NOT DEFINED H)
+set(H "1")
+endif()
+
+if (NOT DEFINED W)
+set(W "1")
+endif()
+
+if (NOT DEFINED NF)
+set(NF "1")
+endif()
+
+if (NOT DEFINED HF)
+set(HF "1")
+endif()
+
+if (NOT DEFINED WF)
+set(WF "1")
+endif()
+
+###################################
+message(STATUS "N=${N} C=${C} H=${H} W=${W} ")
+
 add_custom_target(
 work
-COMMAND ${CMAKE_COMMAND} -E echo N=\${N} C=\${C} H=\${H} W=\${W} 
-COMMAND ${CMAKE_COMMAND} -DN=\${N} -DC=\${C} -DH=\${H} -DW=\${W} -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
+COMMAND ${CMAKE_COMMAND} -E echo N=${N} C=${C} H=${H} W=${W} 
+COMMAND ${CMAKE_COMMAND} -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )
@@ -101,18 +134,18 @@ ${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp)
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
 set_target_properties(assembly_dump PROPERTIES SUFFIX "")
-set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
+set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DRUNTIME_TEST")
+set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
 add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DMEMORY_TRAFFIC_COUNT")
+set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
 
 
@@ -121,7 +154,7 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 -batch_size=\${N} --channel_size=\${C} --height=\${H} --width=\${W} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
 DEPENDS test-memory-traffic 
 )
 
@@ -163,7 +196,7 @@ COMMAND cmake -DVAL="0" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake )
 add_custom_target(
 runtime
 COMMENT "Performing runtime test (Make sure TURBO BOOST is disabled!)"
-COMMAND cmake -DN=\${N} -DC=\${C} -DH=\${H} -DW=\${W} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
 )
 

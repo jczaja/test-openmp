@@ -39,13 +39,20 @@ DEFINE_int32(width, 1,
 
 std::unordered_map<std::string, BaseKernel*> kernels;
 
-DEFINE_string(algo, "sum", "Which algorithm to evaluate. Possible values: sum . Default: sum");
+void GenerateHelpString(std::string& mystr)
+{
+   mystr = "Which algorithm to evaluate. Possible values: ";
+   for (auto& algo : kernels) {
+     mystr += algo.first + " ";                 
+   }
+}
+
+std::string mystr(200,' ');
+
+DEFINE_string(algo, "sum", mystr.c_str());
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
-
-
-
 
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
@@ -366,6 +373,7 @@ void run_mem_test(platform_info& pi)
 
 int main(int argc, char** argv)
 {
+  GenerateHelpString(mystr);
 #ifndef GFLAGS_GFLAGS_H_
   namespace gflags = google;
 #endif
@@ -394,17 +402,12 @@ int main(int argc, char** argv)
        return 0;
     }
 
-    std::cout << "Num reps: " << FLAGS_num_reps << std::endl;
-    std::cout << "Channel Size: " << FLAGS_channel_size << std::endl;
-    std::cout << "Batch Size: " << FLAGS_batch_size << std::endl;
-    std::cout << "Height: " << FLAGS_height << std::endl;
-    std::cout << "Width: " << FLAGS_width << std::endl;
-
     if (kernels.find(FLAGS_algo) == kernels.end()) {
       std::cerr << "ERROR: Selected algorithm: " << FLAGS_algo << " not available!" << std::endl;
       return -1;
     } else {
        kernels[FLAGS_algo]->Init(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width);
+       kernels[FLAGS_algo]->ShowInfo();
        kernels[FLAGS_algo]->Run(FLAGS_num_reps);
     }
 

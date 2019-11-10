@@ -357,46 +357,31 @@ void run_mem_test(platform_info& pi)
     dst[i] = 0.0f;
   } 
 
-  // Memory non-temporaral writes
-  auto memory_nontemp_write = [&](char* dst, size_t total_size, int num_threads) {
-    __m256i* varray = (__m256i*) dst;
-
-    __m256i vals = _mm256_set1_epi32(1);
-    size_t i;
-    auto start_t = __rdtsc();
-    #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
-    for (i = 0; i < total_size / sizeof(__m256); i++) {
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("BEGIN NON-TEMP <---");
-#     endif
-      _mm256_stream_si256(&varray[i], vals);  // This generates the vmovntdq instruction on Brix (i7-4700R (AVX2, Fedora 21)
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("END NON-TEMP <---");
-#     endif
-    }
-    return __rdtsc() - start_t;
-  };
-
   auto memory_nontemp_jit_write = [&](char* dst, size_t total_size, int num_threads)
   {
-    const int inner_seq_length = 32;
+    const int inner_seq_length = 16;
+    unsigned int num_reps = 20;
     size_t single_chunk_size = total_size/num_threads;
     // Get kernel doing non-temporaral writes for single thread
     MemBench benchmark(inner_seq_length, single_chunk_size);
     void (*bench_code)(char*) = (void (*)(char* dst))benchmark.getCode();
 
-    auto start_t = __rdtsc();
-    #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
-    for (size_t i = 0; i < total_size / single_chunk_size; i++) {
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("BEGIN NON-TEMP JIT <---");
-#     endif
-      bench_code(dst+i*single_chunk_size);
-#     ifdef GENERATE_ASSEMBLY
-      asm volatile ("END NON-TEMP JIT <---");
-#     endif
+    unsigned long long deltas = 0;
+    for (unsigned int i =0; i< num_reps; ++i) {
+      auto start_t = __rdtsc();
+      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+      for (size_t i = 0; i < total_size / single_chunk_size; i++) {
+#       ifdef GENERATE_ASSEMBLY
+        asm volatile ("BEGIN NON-TEMP JIT <---");
+#       endif
+        bench_code(dst+i*single_chunk_size);
+#       ifdef GENERATE_ASSEMBLY
+        asm volatile ("END NON-TEMP JIT <---");
+#       endif
+      }
+      deltas += __rdtsc() - start_t;
     }
-    auto timed = __rdtsc() - start_t;
+    auto timed = deltas/num_reps;
     std::cout << "Measured JIT memtest Threads: " << num_threads << " time: " << timed << std::endl;
     return timed;
   };
@@ -425,15 +410,9 @@ void run_mem_test(platform_info& pi)
       return __rdtsc() - start_t;
   };
 
-  std::vector<unsigned long long> mem_nontemp_write_times;
-  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), 1));
-  mem_nontemp_write_times.emplace_back( memory_nontemp_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
-  auto mem_nontemp_write_t = *(std::min_element(mem_nontemp_write_times.begin(), mem_nontemp_write_times.end()));
-  auto nontemp_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_write_t / ((float)pi.tsc_ghz));
-  std::cout << " Memory Non-Temporal Write Throughput: " << nontemp_write_throughput << " [GB/s]" << std::endl;
-
   std::vector<unsigned long long> mem_nontemp_jit_write_times;
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
   auto mem_nontemp_jit_write_t = *(std::min_element(mem_nontemp_jit_write_times.begin(), mem_nontemp_jit_write_times.end()));
   auto nontemp_jit_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_jit_write_t / ((float)pi.tsc_ghz));

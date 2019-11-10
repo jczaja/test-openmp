@@ -165,7 +165,7 @@ DEPENDS test-memory-traffic
 add_custom_target(
 memtest
 COMMENT "Performing peak memory test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 6 | tee memtest.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest.txt
 DEPENDS test-openmp-gomp
 VERBATIM
 )

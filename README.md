@@ -52,3 +52,6 @@ Memory object where allocated on heap to foul memory prefetchet
 
 
 Memory throughput test is done without fixing CPU clocks
+
+
+One thread cannot fully use memory throughput

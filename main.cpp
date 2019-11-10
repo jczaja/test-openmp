@@ -203,7 +203,7 @@ struct MemBench : public Xbyak::CodeGenerator {
   Xbyak::util::Cpu current_cpu;
   if(current_cpu.has(Xbyak::util::Cpu::tAVX512F)) {
     printf("AVX-512 supported!\n");
-    mov (rcx, size_to_write/64);
+    mov (rcx, size_to_write/64/num_inner_loop_instructions);
     mov (rsi, 64*num_inner_loop_instructions);
     L("Loop_over");
     for(int i=0; i<num_inner_loop_instructions; ++i) {
@@ -215,7 +215,7 @@ struct MemBench : public Xbyak::CodeGenerator {
 
   } else if (current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
     printf("AVX2 supported!\n");
-    mov (rcx, size_to_write/32);
+    mov (rcx, size_to_write/32/num_inner_loop_instructions);
     mov (rsi, 32*num_inner_loop_instructions);
     L("Loop_over");
     for(int i=0; i<num_inner_loop_instructions; ++i) {
@@ -227,7 +227,7 @@ struct MemBench : public Xbyak::CodeGenerator {
 
   } else if (current_cpu.has(Xbyak::util::Cpu::tAVX)) {
     printf("AVX detected!\n");
-    mov (rcx, size_to_write/16);
+    mov (rcx, size_to_write/16/num_inner_loop_instructions);
     mov (rsi, 16*num_inner_loop_instructions);
     L("Loop_over");
     for(int i=0; i<num_inner_loop_instructions; ++i) {
@@ -338,7 +338,7 @@ void run_mem_test(platform_info& pi)
 
   // Get 512 MB for source and copy it to 512 MB dst. 
   // Intention is to copy more memory than it can be fead into cache 
-  size_t size_of_floats = 128*1024*1024;
+  size_t size_of_floats = 512*1024*1024;
   float *src,*dst;
   int ret = posix_memalign((void**)&src,64,size_of_floats*sizeof(float));
   if (ret != 0) {
@@ -379,7 +379,7 @@ void run_mem_test(platform_info& pi)
 
   auto memory_nontemp_jit_write = [&](char* dst, size_t total_size, int num_threads)
   {
-    const int inner_seq_length = 50;
+    const int inner_seq_length = 32;
     size_t single_chunk_size = total_size/num_threads;
     // Get kernel doing non-temporaral writes for single thread
     MemBench benchmark(inner_seq_length, single_chunk_size);
@@ -388,9 +388,17 @@ void run_mem_test(platform_info& pi)
     auto start_t = __rdtsc();
     #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
     for (size_t i = 0; i < total_size / single_chunk_size; i++) {
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("BEGIN NON-TEMP JIT <---");
+#     endif
       bench_code(dst+i*single_chunk_size);
+#     ifdef GENERATE_ASSEMBLY
+      asm volatile ("END NON-TEMP JIT <---");
+#     endif
     }
-    return __rdtsc() - start_t;
+    auto timed = __rdtsc() - start_t;
+    std::cout << "Measured JIT memtest Threads: " << num_threads << " time: " << timed << std::endl;
+    return timed;
   };
 
 

@@ -16,10 +16,12 @@ endmacro()
 
 function(get_stats ret num_reps mapping)
 set(EXPERIMENT_COMMAND ${CODES} ${CMAKE_BINARY_DIR}/test-openmp-gomp --batch_size=${N}
-  --channel_size=${C} --height=${H} --width=${W} --algo=${algo} --num_reps ${num_reps})
+  --channel_size=${C} --height=${H} --width=${W} --algo=${ALGO} --num_reps ${num_reps})
 list(LENGTH mapping len)
 
 string(REGEX REPLACE "\n" "" ${EXPERIMENT_COMMAND} "${EXPERIMENT_COMMAND}")
+
+message(STATUS "Experiment command: ${EXPERIMENT_COMMAND}")
 
 # Get report of one execution 
 execute_process(

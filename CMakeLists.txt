@@ -110,13 +110,16 @@ if (NOT DEFINED WF)
 set(WF "1")
 endif()
 
+if (NOT DEFINED ALGO)
+set(ALGO "sum")
+endif()
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} ")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} ALGO=${ALGO}")
 
 add_custom_target(
 work
 COMMAND ${CMAKE_COMMAND} -E echo N=${N} C=${C} H=${H} W=${W} 
-COMMAND ${CMAKE_COMMAND} -DPERFMON=${PERFMON} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
+COMMAND ${CMAKE_COMMAND} -DPERFMON=${PERFMON} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )
@@ -154,7 +157,7 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} --algo=${ALGO} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
 DEPENDS test-memory-traffic 
 )
 
@@ -196,7 +199,7 @@ COMMAND cmake -DVAL="0" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake )
 add_custom_target(
 runtime
 COMMENT "Performing runtime test (Make sure TURBO BOOST is disabled!)"
-COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
 )
 

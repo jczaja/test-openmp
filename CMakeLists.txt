@@ -217,3 +217,4 @@ add_test( b2_c1007 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 2 --ch
 add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --channel_size 50 )
 add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
+add_test( alexnet_c1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 3 --height=227 --width=227 --algo=dnnl_nchw_conv --num_reps 2)

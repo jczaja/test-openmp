@@ -114,7 +114,7 @@ if (NOT DEFINED ALGO)
 set(ALGO "sum")
 endif()
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} ALGO=${ALGO}")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO}")
 
 add_custom_target(
 work

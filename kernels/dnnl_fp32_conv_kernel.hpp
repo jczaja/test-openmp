@@ -34,6 +34,7 @@ class DNNLKernel : public BaseKernel {
 
  private:
    unsigned long long tsc_ghz_;
+   dnnl::engine eng_;
    dnnl::stream s_;
    std::unique_ptr<dnnl::memory> src_;
    std::unique_ptr<dnnl::memory> weights_;

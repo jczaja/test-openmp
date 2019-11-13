@@ -131,8 +131,7 @@ add_definitions(-Wall -mavx)
 add_definitions(-fopt-info-vec-optimized)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_library(assembly_dump ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
-${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp)
+${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
 
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
@@ -147,9 +146,10 @@ target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
 add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
-target_link_libraries(test-memory-traffic m ${GFLAGS_LIB})
+target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 
 
 # to compute operational intensity we need to count memory

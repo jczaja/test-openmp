@@ -59,3 +59,6 @@ One thread cannot fully use memory throughput
 
 When GOMP_CPU_AFFINITY set then then all in one thread then memory throughput is very 
 low as multithreading has to work on one core
+
+When not considering Prefetchers and non-temporaral instructions traffic computed is half of theoretical estimation which is minimum
+

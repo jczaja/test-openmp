@@ -81,14 +81,23 @@ void DNNLKernel<NF, HF, WF>::ShowInfo(void)
   int h = dims[2];
   int w = dims[3];
 
+  auto dst_md = dst_->get_desc();
+  dims = dst_md.data.dims;
+  int oc = dims[1];
+  int oh = dims[2];
+  int ow = dims[3];
+
   std::cout << std::endl << " DNNL NCHW conv :" << std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
-  "   channel_size: "<< c << std::endl <<
+  "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<
   "   width: "<< w << std::endl <<
   "   num_filters: " << NF << std::endl <<
   "   filter height: " << HF << std::endl <<
-  "   filter_width: " << WF << std::endl << std::endl;
+  "   filter_width: " << WF << std::endl << 
+  "   output channel size: "<< oc << std::endl <<
+  "   output height: "<< oh << std::endl <<
+  "   output width: "<< ow << std::endl << std::endl;
 }
 
 template<unsigned int NF, unsigned int HF, unsigned int WF>

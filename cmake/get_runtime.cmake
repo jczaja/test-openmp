@@ -27,9 +27,9 @@ endwhile()
 # num_reps is twice as big as used for final execution
 math(EXPR num_reps "${num_reps}/2")
 message(STATUS "Total(num_reps=${num_reps}) execution time[cycles]: ${total_time_c}")
-string(REGEX REPLACE "\n$" "" total_time_stripped "${total_time_c}")
+string(REGEX REPLACE "\n$" "" total_time_stripped "${total_time_s}")
 
-math(EXPR average_time "${total_time_stripped}/${num_reps}")
+floatexpr("${total_time_stripped}/${num_reps}" average_time)
 
 message(STATUS "Average execution time[cycles]: ${average_time}")
 file(WRITE ${CMAKE_BINARY_DIR}/runtime.txt ${average_time})

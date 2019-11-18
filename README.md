@@ -62,3 +62,10 @@ low as multithreading has to work on one core
 
 When not considering Prefetchers and non-temporaral instructions traffic computed is half of theoretical estimation which is minimum
 
+
+Memory measurement varies due ot operating system work like pagin in some pages 
+
+
+Runtime placing:
+Work - FLOPS to perf algorithm
+Runtime - Time[cycles] of execution of single instance of algorithm

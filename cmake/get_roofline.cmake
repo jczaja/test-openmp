@@ -16,7 +16,8 @@ set(script "${script}\n cpu_roof = ${CPU_THROUGHPUT}")          # cpu_roofline
 set(script "${script}\n set output \"roofline.png\"")
 set(script "${script}\n roofline(x) = min(mem_roof(x),cpu_roof)")
 set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) nohead dt 2")
-set(script "${script}\n set label \"compute bound\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
+set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.005 fc  rgb \"black\" fs solid")
+set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
 set(script "${script}\n set label \"memory bound\" at rigid_point/2,mem_roof(rigid_point/2) + 2 textcolor \"black\" rotate by atan(${MEMORY_THRGHPT}/(${CPU_THRGHPT}*1.1/10.0)/(1920.0/1080.0))") 
 set(script "${script}\n plot roofline(x) ls LINE_ROOF")
@@ -41,7 +42,7 @@ floatexpr("${WORK}/${MEMORY_TRAFFIC}" OI)
 message(STATUS "Operational Intensity: ${OI}")
 
 # Compute Actual Runtime performance
-floatexpr("${WORK}/${EXECUTION_TIME}" RUNTIME_PERFORMANCE)
+floatexpr("${WORK}/${EXECUTION_TIME}/1000000000.0" RUNTIME_PERFORMANCE)
 message(STATUS "Runtime performance: ${RUNTIME_PERFORMANCE}")
 
 string(REGEX REPLACE "\n$" "" OI_STRIPPED "${OI}")

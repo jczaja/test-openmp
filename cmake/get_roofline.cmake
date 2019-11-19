@@ -19,7 +19,13 @@ set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) noh
 set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.005 fc  rgb \"black\" fs solid")
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
-set(script "${script}\n set label \"memory bound\" at rigid_point/2,mem_roof(rigid_point/2) + 2 textcolor \"black\" rotate by atan(${MEMORY_THRGHPT}/(${CPU_THRGHPT}*1.1/10.0)/(1920.0/1080.0))") 
+set(script "${script}\n set label \"Runtime performance (${RUNTIME_PERFORMANCE} GFLOPS)\" at scr 0.4, 0.45 textcolor \"black\"") 
+set(script "${script}\n set arrow from scr 0.5,0.5 to ${OI},${RUNTIME_PERFORMANCE} ")
+set(script "${script}\n ")
+
+
+ 
+
 set(script "${script}\n plot roofline(x) ls LINE_ROOF")
 file(WRITE "${CMAKE_BINARY_DIR}/roofline.plot" "${script}")
 endmacro()

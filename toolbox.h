@@ -194,8 +194,8 @@ class MemoryTraffic : public ToolBox
     // HW conters LLC -> DRAM are not measuring prefetcher
     pe_.type = PERF_TYPE_HARDWARE;
     pe_.config = PERF_COUNT_HW_CACHE_MISSES; 
-//    pe_.type = PERF_TYPE_RAW;
-//    pe_.config = 0x200; 
+    //pe_.type = PERF_TYPE_RAW;
+    //pe_.config = 0xfed15051; 
     pe_.disabled = 1;
     pe_.exclude_kernel = 1; // exclude events taking place in kernel
     pe_.exclude_hv = 1;     // Exclude hypervisor
@@ -228,11 +228,14 @@ class MemoryTraffic : public ToolBox
     auto num_reads = read(fd_, &count, sizeof(long long));
 
     if (num_reads == -1) {
-      throw "ERROR reading : PERF_COUNT_HW_CACHE_MISSES";
+      throw "ERROR reading : PMU DRAM counters";
     }
     
     // LLC miss * linesize is rough memory traffic
-    total_ =  count*llc_cache_linesize_;
+    total_ =  (count)*llc_cache_linesize_;
+
+
+    std::cout << "Final: " << count << std::endl;
 
     // Returning value to the cout stream directly makes lots of memory movement 
     std::cout << "MemoryTraffic: " << total_ << std::endl;
@@ -247,9 +250,6 @@ class MemoryTraffic : public ToolBox
 
     return ret;
   }
-
- 
-
 
  private:
   int fd_;

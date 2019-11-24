@@ -137,6 +137,7 @@ void DNNLKernel<NF, HF, WF>::Run(int num_reps)
       rt.Start();
 #endif
       RunSingle();  // Single iteration execution
+      //sleep(1);
 #ifdef RUNTIME_TEST
       rt.Stop();
 #endif

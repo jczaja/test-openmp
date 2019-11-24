@@ -20,7 +20,7 @@ set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
 set(script "${script}\n set label \"Runtime performance (${RUNTIME_PERFORMANCE} GFLOPS)\" at scr 0.4, 0.45 textcolor \"black\"") 
-set(script "${script}\n set arrow from scr 0.5,0.5 to ${OI},${RUNTIME_PERFORMANCE} ")
+set(script "${script}\n set arrow from scr 0.5,0.5 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n ")
 
 

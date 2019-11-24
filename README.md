@@ -65,7 +65,49 @@ When not considering Prefetchers and non-temporaral instructions traffic compute
 
 Memory measurement varies due ot operating system work like pagin in some pages 
 
+GEMM DNNL conv has software prefetcher instructions
+
 
 Runtime placing:
 Work - FLOPS to perf algorithm
 Runtime - Time[cycles] of execution of single instance of algorithm
+
+TRAFFIC:
+a) LLC MISS:
+83736064
+b) LLC STORE:
+33792576
+c) LLC-PREFETCHES
+0
+d)LLC-PREFETCH-MISSES
+0
+ 
+
+4*(100*227*227*3 + 96*3*11*11 + 100*96*55*55) =178134192 
+                                                83736064
+                                             17541281600
+
+Counters are bad as:
+runtime: 0.32 s
+memory traffic: 18747813120 (18 GB)
+
+
+
+
+operation with sleep:
+1222592
+
+BAR adress:
+sudo setpci -s 0:0.0 0x48.l
+
+SKX laptop:
+BAR - 0xfed10001
+
+
+testing on sum algorithm
+
+Disabling prefetcher(msr-tools):
+wrmsr -p0 0x1a4 1
+rdmsr -p0 0x1a4
+
+

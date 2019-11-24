@@ -40,7 +40,7 @@ class DNNLKernel : public BaseKernel {
    std::unique_ptr<dnnl::memory> weights_;
    std::unique_ptr<dnnl::memory> bias_;
    std::unique_ptr<dnnl::memory> dst_;
-   dnnl::primitive conv_;
+   std::unique_ptr<dnnl::primitive> conv_;
    std::unordered_map<int, dnnl::memory> conv_args_;
 };
 

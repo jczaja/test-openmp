@@ -55,7 +55,7 @@ void DNNLKernel<NF, HF, WF>::Init(platform_info &pi, int n, int c, int h, int w)
   auto conv_desc = dnnl::convolution_forward::desc(dnnl::prop_kind::forward_inference,
            dnnl::algorithm::convolution_direct, src_md, weights_md, bias_md, dst_md, strides, padding, padding);
   auto conv_pd = dnnl::convolution_forward::primitive_desc(conv_desc, eng_); 
-  conv_ = dnnl::convolution_forward(conv_pd);
+  conv_.reset(new dnnl::convolution_forward(conv_pd));
   conv_args_[DNNL_ARG_SRC] = *src_;  
   conv_args_[DNNL_ARG_WEIGHTS] = *weights_;  
   conv_args_[DNNL_ARG_BIAS] = *bias_;  
@@ -116,7 +116,7 @@ inline void DNNLKernel<NF, HF, WF>::RunSingle(void)
 # ifdef GENERATE_ASSEMBLY
     asm volatile ("BEGIN dnnl conv NCHW Kernel");
 # endif
-  conv_.execute(s_,conv_args_);
+  conv_->execute(s_,conv_args_);
 # ifdef GENERATE_ASSEMBLY
     asm volatile ("END dnnl Kernel");
 # endif

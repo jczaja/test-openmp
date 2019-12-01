@@ -83,9 +83,18 @@ d)LLC-PREFETCH-MISSES
 0
  
 
-4*(100*227*227*3 + 96*3*11*11 + 100*96*55*55) =178134192 
-                                                83736064
+
+
+4*(100*227*227*3 + 96*3*11*11 + 100*96*55*55) = 178134192/1024/1024 = 169 MB 
+4*(200*227*227*3 + 96*3*11*11 + 200*96*55*55) = 356128992/1024/1024 = 339 MB 
+                                                83736064  # Cache miss
                                              17541281600
+
+Operating system is included
+0 reps : 1300 MB
+1 reps : 2600 MB
+On operating lots of services result is not
+
 
 Counters are bad as:
 runtime: 0.32 s
@@ -109,5 +118,27 @@ testing on sum algorithm
 Disabling prefetcher(msr-tools):
 wrmsr -p0 0x1a4 1
 rdmsr -p0 0x1a4
+
+HSW (BRIX):
+47307712 (With prefetch)
+55331392 (without prefetch)
+actually no diffrence
+
+
+sum (N=10000):
+40128  # NO Memory prefetch 
+10432  # Memory prefetcher
+
+
+Problem is that we have half of memory transfer computed from cache misses
+And more than possible memory transfer when DRAM_READ is conidered
+it seems that software memory prefetcher does not change statr of processor so no cache miss
+
+Due to security reasons openning /dev/mem is not available. Reading perf even via BAR + data_read adress gives very
+big numbers much higher than capacity of bandwith.
+
+Most promising is perf stat -e data_reads <program>
+It is system wide measure and require root priviligies to be made
+
 
 

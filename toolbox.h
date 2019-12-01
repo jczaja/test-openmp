@@ -192,10 +192,10 @@ class MemoryTraffic : public ToolBox
   MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fd_(-1) {
     memset(&pe_, 0, sizeof(struct perf_event_attr));
     // HW conters LLC -> DRAM are not measuring prefetcher
-    pe_.type = PERF_TYPE_HARDWARE;
-    pe_.config = PERF_COUNT_HW_CACHE_MISSES; 
-    //pe_.type = PERF_TYPE_RAW;
-    //pe_.config = 0xfed15051; 
+    //pe_.type = PERF_TYPE_HARDWARE;
+    //pe_.config = PERF_COUNT_HW_CACHE_MISSES; 
+    pe_.type = PERF_TYPE_RAW;
+    pe_.config = 0xfed15051; 
     pe_.disabled = 1;
     pe_.exclude_kernel = 1; // exclude events taking place in kernel
     pe_.exclude_hv = 1;     // Exclude hypervisor

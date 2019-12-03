@@ -88,7 +88,8 @@ d)LLC-PREFETCH-MISSES
 4*(100*227*227*3 + 96*3*11*11 + 100*96*55*55) = 178134192/1024/1024 = 169 MB 
 4*(200*227*227*3 + 96*3*11*11 + 200*96*55*55) = 356128992/1024/1024 = 339 MB 
                                                 83736064  # Cache miss
-                                             17541281600
+READ:   61974192
+WRITE: 116160000
 
 Operating system is included
 0 reps : 1300 MB
@@ -141,4 +142,5 @@ Most promising is perf stat -e data_reads <program>
 It is system wide measure and require root priviligies to be made
 
 
-
+Patch to have PMU available:
+https://lwn.net/Articles/585372/

@@ -157,7 +157,7 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps 1 --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} --algo=${ALGO} | grep -ie "MemoryTraffic" | cut -d ":" -f 2 | tee traffic.txt
+COMMAND ${CMAKE_COMMAND} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_traffic.cmake
 DEPENDS test-memory-traffic 
 )
 

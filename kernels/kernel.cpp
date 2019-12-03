@@ -49,8 +49,8 @@ inline void Kernel::RunSingle(void)
 void Kernel::Run(int num_reps)
 {
 #ifdef MEMORY_TRAFFIC_COUNT
-    auto mt = MemoryTraffic();
-    mt.StartCounting();
+    auto mt = ToolBox(true); // Just overwritting caches
+    //mt.StartCounting();
 #endif
 #ifdef RUNTIME_TEST
     auto rt = Runtime(tsc_ghz_,false);
@@ -65,7 +65,7 @@ void Kernel::Run(int num_reps)
 #endif
     }
 #ifdef MEMORY_TRAFFIC_COUNT
-    mt.StopCounting();
+    //mt.StopCounting();
 #endif
 
 }

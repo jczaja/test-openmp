@@ -141,8 +141,7 @@ template<unsigned int NF, unsigned int HF, unsigned int WF>
 void DNNLKernel<NF, HF, WF>::Run(int num_reps)
 {
 #ifdef MEMORY_TRAFFIC_COUNT
-    auto mt = MemoryTraffic();
-    mt.StartCounting();
+    auto mt = ToolBox(true); // Just overwritting caches
 #endif
 #ifdef RUNTIME_TEST
     auto rt = Runtime(tsc_ghz_,false);
@@ -157,7 +156,4 @@ void DNNLKernel<NF, HF, WF>::Run(int num_reps)
       rt.Stop();
 #endif
     }
-#ifdef MEMORY_TRAFFIC_COUNT
-    mt.StopCounting();
-#endif
 }

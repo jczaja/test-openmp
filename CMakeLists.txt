@@ -140,6 +140,7 @@ set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHei
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
@@ -147,6 +148,7 @@ target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 # Memory traffic counting build
 add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
@@ -218,3 +220,4 @@ add_test( b4_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 4 --chan
 add_test( b300_c50 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 50 --num_reps 2)
 add_test( b300_c500 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 300 --channel_size 500 --num_reps 1)
 add_test( alexnet_c1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 3 --height=227 --width=227 --algo=dnnl_nchw_conv --num_reps 2)
+add_test( alexnet_r1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 96 --height=55 --width=55 --algo=dnnl_nchw_relu --num_reps 2)

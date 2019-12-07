@@ -4,6 +4,7 @@
 #include<kernels/dnnl_fp32_eltwise_kernel.hpp>
 
 REGISTER_KERNEL(DNNLEltwiseKernel<dnnl::algorithm::eltwise_relu COMMA 0 COMMA 0>);
+//REGISTER_KERNEL(DNNLEltwiseKernel<dnnl::algorithm::eltwise_swish COMMA 0 COMMA 0>); // Swish Alpha to be adjusted
 
 template<dnnl::algorithm algo, int alpha, int beta>
 DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel()

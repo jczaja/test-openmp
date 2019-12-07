@@ -144,3 +144,7 @@ It is system wide measure and require root priviligies to be made
 
 Patch to have PMU available:
 https://lwn.net/Articles/585372/
+
+Experiments with Relu showed that PMU of core are not good as relu is implemented as max(x,0) implemented
+via vcomp are not counted in PMU events. Hence work is undercomputed
+

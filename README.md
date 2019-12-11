@@ -148,3 +148,7 @@ https://lwn.net/Articles/585372/
 Experiments with Relu showed that PMU of core are not good as relu is implemented as max(x,0) implemented
 via vcomp are not counted in PMU events. Hence work is undercomputed
 
+
+Layer norm for inference is memory bound as we read input, mean and variance and do not perform much
+actual arithmetic operations. It may be good to make a forward training for comparison 
+

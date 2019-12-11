@@ -1,4 +1,4 @@
-macro(create_gnuplot_script CPU_THRGHPT MEMORY_THRGHPT OI RUNTIME_PERFORMANCE HW_INFO)
+macro(create_gnuplot_script CPU_THRGHPT MEMORY_THRGHPT OI RUNTIME_PERFORMANCE HW_INFO ALGO_INFO)
 set(script "set terminal pngcairo dashed size 1920, 1080")
 set(script "${script}\n set output \"roofline.png\"")
 set(script "${script}\n set xlabel \"Operational Intensity [FLOPS/Byte]\"")
@@ -21,6 +21,7 @@ set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
 set(script "${script}\n set label \"Runtime performance (${RUNTIME_PERFORMANCE} GFLOPS)\" at scr 0.4, 0.45 textcolor \"black\"") 
+set(script "${script}\n set label \"${ALGO_INFO}\" at scr 0.2, 0.25 textcolor \"black\"") 
 set(script "${script}\n set arrow from scr 0.5,0.5 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n ")
 
@@ -44,6 +45,7 @@ file(STRINGS ${CMAKE_BINARY_DIR}/memtest.txt MEMORY_THROUGHPUT)
 file(STRINGS ${CMAKE_BINARY_DIR}/cputest.txt CPU_THROUGHPUT)
 file(STRINGS ${CMAKE_BINARY_DIR}/runtime.txt EXECUTION_TIME)
 file(STRINGS ${CMAKE_BINARY_DIR}/cpu_info.txt HW_INFO)
+file(STRINGS ${CMAKE_BINARY_DIR}/algo_info.txt ALGO_INFO)
 
 # Compute operational intensity
 floatexpr("${WORK}/${MEMORY_TRAFFIC}" OI)
@@ -56,7 +58,7 @@ message(STATUS "Runtime performance: ${RUNTIME_PERFORMANCE}")
 string(REGEX REPLACE "\n$" "" OI_STRIPPED "${OI}")
 string(REGEX REPLACE "\n$" "" RUNTIME_PERFORMANCE_STRIPPED "${RUNTIME_PERFORMANCE}")
 
-create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO}")
+create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO}" "${ALGO_INFO}")
 # Execute gnuplot using generated script
 execute_process(
     COMMAND ${GNUPLOT_EXECUTABLE} ${CMAKE_BINARY_DIR}/roofline.plot

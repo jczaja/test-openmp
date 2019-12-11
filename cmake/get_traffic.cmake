@@ -31,12 +31,21 @@ execute_process(
 file(WRITE ${CMAKE_BINARY_DIR}/cpu_info.txt ${CPU_MODEL})
 endmacro()
 
+macro(get_algorithm_info)
+execute_process(
+    COMMAND echo ${REGULAR_OUTPUT}
+    COMMAND grep -e "x"
+    OUTPUT_VARIABLE ALGO_INFO
+)
+file(WRITE ${CMAKE_BINARY_DIR}/algo_info.txt ${ALGO_INFO})
+endmacro()
 
 function(count_traffic num_reps data_reads data_writes)
 execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} 
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_cpu_info()
+get_algorithm_info()
 #message(STATUS "ANALYSIS(${num_reps}): ${ANALYSIS_RESULT}")
 set(reads "0")
 set(writes "0")

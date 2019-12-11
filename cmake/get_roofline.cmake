@@ -1,6 +1,6 @@
 macro(create_gnuplot_script CPU_THRGHPT MEMORY_THRGHPT OI RUNTIME_PERFORMANCE HW_INFO ALGO_INFO)
 set(script "set terminal pngcairo dashed size 1920, 1080")
-set(script "${script}\n set output \"roofline.png\"")
+set(script "${script}\n set output \"roofline-${ALGO_INFO}.png\"")
 set(script "${script}\n set xlabel \"Operational Intensity [FLOPS/Byte]\"")
 set(script "${script}\n set ylabel \"Atteinable GFLOPS/s\"")
 set(script "${script}\n set title \"${HW_INFO}\"")
@@ -14,19 +14,15 @@ set(script "${script}\n min(x,y) = x < y ? x : y")
 set(script "${script}\n rigid_point = ${CPU_THROUGHPUT}/${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n mem_roof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n cpu_roof = ${CPU_THROUGHPUT}")          # cpu_roofline
-set(script "${script}\n set output \"roofline.png\"")
 set(script "${script}\n roofline(x) = min(mem_roof(x),cpu_roof)")
 set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) nohead dt 2")
 set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.005 fc  rgb \"black\" fs solid")
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
-set(script "${script}\n set label \"Runtime performance (${RUNTIME_PERFORMANCE} GFLOPS)\" at scr 0.4, 0.45 textcolor \"black\"") 
-set(script "${script}\n set label \"${ALGO_INFO}\" at scr 0.2, 0.25 textcolor \"black\"") 
+set(script "${script}\n set label \"Runtime performance: ${RUNTIME_PERFORMANCE} GFLOPS out of \" at scr 0.4, 0.35 textcolor \"black\"") 
+set(script "${script}\n set label \"${ALGO_INFO}\" at first 0.95*${OI}, scr 0.25 textcolor \"black\" rotate by 90") 
 set(script "${script}\n set arrow from scr 0.5,0.5 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n ")
-
-
- 
 
 set(script "${script}\n plot roofline(x) ls LINE_ROOF")
 file(WRITE "${CMAKE_BINARY_DIR}/roofline.plot" "${script}")

@@ -87,7 +87,9 @@ void DNNLKernel<NF, HF, WF>::ShowInfo(void)
   int oh = dims[2];
   int ow = dims[3];
 
-  std::cout << std::endl << " DNNL NCHW conv :" << std::endl << std::endl <<
+  std::cout << std::endl << " DNNL NCHW Conv " << n << "x" << c << "x" 
+         << h << "x" << w << " " << NF << "x" << HF << "x" << WF << std::endl
+              << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<

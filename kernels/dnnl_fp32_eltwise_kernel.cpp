@@ -58,7 +58,8 @@ void DNNLEltwiseKernel<algo, alpha,beta>::ShowInfo(void)
   int h = dims[2];
   int w = dims[3];
 
-  std::cout << std::endl << " DNNL NCHW eltwise :" << std::endl << std::endl <<
+  std::cout << std::endl << " DNNL NCHW eltwise " << n << "x" << c 
+        << "x" << h << "x" << w << std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<

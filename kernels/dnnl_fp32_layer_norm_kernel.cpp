@@ -66,13 +66,12 @@ void DNNLLayerNormKernel::ShowInfo(void)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
-  int n = dims[0];
-  int c = dims[1];
-  int h = dims[2];
-  int w = dims[3];
+  int t = dims[0];
+  int n = dims[1];
+  int c = dims[2];
 
-  std::cout << std::endl << " DNNL TNC Layer Norm :" << std::endl << std::endl <<
-  "   sequence length: "<< h*w << std::endl <<
+  std::cout << std::endl << " DNNL TNC Layer Norm " << t << "x" << n << "x" << c << std::endl << std::endl <<
+  "   sequence length: "<<  t << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl << std::endl;
 }

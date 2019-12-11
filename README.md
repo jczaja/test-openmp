@@ -152,3 +152,4 @@ via vcomp are not counted in PMU events. Hence work is undercomputed
 Layer norm for inference is memory bound as we read input, mean and variance and do not perform much
 actual arithmetic operations. It may be good to make a forward training for comparison 
 
+Put PaddlePaddle LayerNorm implementation into program for comparison

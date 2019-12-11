@@ -30,7 +30,7 @@ void Kernel::Init(platform_info &pi, int n, int c, int h, int w)
 
 void Kernel::ShowInfo(void)
 {
-    std::cout << std::endl << " Sum (size=" << sized_ << ")" << std::endl << std::endl;
+    std::cout << std::endl << " Sum " << sized_<<"x1" <<  std::endl << std::endl;
 }
 
 inline void Kernel::RunSingle(void)

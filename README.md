@@ -153,3 +153,20 @@ Layer norm for inference is memory bound as we read input, mean and variance and
 actual arithmetic operations. It may be good to make a forward training for comparison 
 
 Put PaddlePaddle LayerNorm implementation into program for comparison
+
+Layer Norm Analysis:
+Src shape = N=256 C=768 H=32 W=4 (size in bytes: 100663296)
+mean shape = H=32 W=4 N=256 (size in bytes: 131072) 
+variance shape = H=32 W=4 N=256 (size in bytes: 131072) 
+dst shape = N=256 C=768 H=32 W=4 (size in bytes: 100663296)
+Theoretical memory accesses: 100663296 + 131072 + 131072 + 100663296 = 201588736 = 192 MB 
+Actual (estimated) memory accesses: 3.00333e+08 
+actual work = 50429952
+theoretical work ((src[i] - mean[i])/bias[i] ) =  50331648
+
+How to do warm cache?
+
+
+
+
+

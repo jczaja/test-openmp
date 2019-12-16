@@ -1,0 +1,60 @@
+#include <iostream>
+#include <unordered_map>
+#include <x86intrin.h>
+#include<kernels/dnnl_fp32_conv_blocked_kernel.hpp>
+
+REGISTER_KERNEL(DNNLConvBlockedKernel);
+
+DNNLConvBlockedKernel::DNNLConvBlockedKernel()
+{
+  // Register kernel
+  kernels[std::string("dnnl_blocked_conv")] = this;
+}
+
+void DNNLConvBlockedKernel::Init(platform_info &pi, int n, int c, int h, int w)
+{
+  tsc_ghz_ = pi.tsc_ghz;
+
+  // Get CPU engine
+  eng_ = dnnl::engine(dnnl::engine::kind::cpu,0);
+  s_ = dnnl::stream(eng_);
+
+  // Allocate input
+  dnnl::memory::dims src_tz = {n, c, h, w};
+  auto src_md = dnnl::memory::desc(src_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::nchw);
+  src_.reset(new dnnl::memory(src_md, eng_)); 
+  this->InitializeData(static_cast<float*>(src_->get_data_handle()),n*c*h*w);
+
+  // Allocate weights & bias
+  auto num_filters = NumF;
+  dnnl::memory::dims weights_tz = {num_filters, c, HeightF, WidthF};
+  dnnl::memory::dims bias_tz = {num_filters};
+  dnnl::memory::dims strides = {4,4};
+  dnnl::memory::dims padding = {0,0};
+
+  auto weights_md = dnnl::memory::desc(weights_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::oihw);
+  weights_.reset(new dnnl::memory(weights_md, eng_));
+  this->InitializeData(static_cast<float*>(weights_->get_data_handle()),
+     weights_tz[0]*weights_tz[1]*weights_tz[2]*weights_tz[3]);
+
+  auto bias_md = dnnl::memory::desc(bias_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::x);
+  bias_.reset(new dnnl::memory(bias_md, eng_)); 
+  this->InitializeData(static_cast<float*>(bias_->get_data_handle()), bias_tz[0]);
+
+  // Allocate output
+  auto oh = (h + 2*padding[0] - weights_tz[2])/strides[0] + 1;
+  auto ow = (w + 2*padding[1] - weights_tz[3])/strides[1] + 1;
+  dnnl::memory::dims dst_tz = {n, num_filters, oh, ow};
+  auto dst_md = dnnl::memory::desc(dst_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::nchw);
+  dst_.reset(new dnnl::memory(dst_md, eng_)); 
+
+  // Create computational primitive
+  auto conv_desc = dnnl::convolution_forward::desc(dnnl::prop_kind::forward_inference,
+           dnnl::algorithm::convolution_direct, src_md, weights_md, bias_md, dst_md, strides, padding, padding);
+  auto conv_pd = dnnl::convolution_forward::primitive_desc(conv_desc, eng_); 
+  conv_.reset(new dnnl::convolution_forward(conv_pd));
+  conv_args_[DNNL_ARG_SRC] = *src_;  
+  conv_args_[DNNL_ARG_WEIGHTS] = *weights_;  
+  conv_args_[DNNL_ARG_BIAS] = *bias_;  
+  conv_args_[DNNL_ARG_DST] = *dst_;  
+}

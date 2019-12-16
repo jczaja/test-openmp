@@ -154,6 +154,13 @@ actual arithmetic operations. It may be good to make a forward training for comp
 
 Put PaddlePaddle LayerNorm implementation into program for comparison
 
+For small sizes authors claim that measure invalidate measure , but we used actual sizes as used in models of deep learning
+Which are of siginficant size e.g. hundreds of megabytes
+
+
+LayerNorm is just one building block, it is limited usabilty without practical usage.
+How does it help in PaddlePaddle
+
 Layer Norm Analysis:
 Src shape = N=256 C=768 H=32 W=4 (size in bytes: 100663296)
 mean shape = H=32 W=4 N=256 (size in bytes: 131072) 
@@ -166,7 +173,20 @@ theoretical work ((src[i] - mean[i])/bias[i] ) =  50331648
 
 How to do warm cache?
 
+- implement warm caches
+- plot should have warm and cold measures
+- look at assembly of LayerNorm
+- Start making actual paper
 
+Analysis of Layer Norm kernel
 
+Each thread is given a portion of data to process and it executes eential code.
 
+Essential code:
+vmovups ymm11,YMMWORD PTR [rdx+0x420]
+vsubps ymm11,ymm11,ymm15                                                            
+vmulps ymm11,ymm11,ymm10                                                            
+vmovups YMMWORD PTR [rax+0x420],ymm11            
+
+problem is that there is a chain dependency among instructions. And for such an easy operatin it is unavoidable.
 

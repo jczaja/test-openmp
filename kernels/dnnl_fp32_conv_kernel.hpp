@@ -32,16 +32,16 @@ class DNNLKernel : public BaseKernel {
    void RunSingle(void);
    void InitializeData(float* ptr, unsigned int sized);
 
- private:
+ protected:
    unsigned long long tsc_ghz_;
-   dnnl::engine eng_;
-   dnnl::stream s_;
    std::unique_ptr<dnnl::memory> src_;
    std::unique_ptr<dnnl::memory> weights_;
    std::unique_ptr<dnnl::memory> bias_;
    std::unique_ptr<dnnl::memory> dst_;
    std::unique_ptr<dnnl::primitive> conv_;
    std::unordered_map<int, dnnl::memory> conv_args_;
+   dnnl::engine eng_;
+   dnnl::stream s_;
 };
 
 #endif

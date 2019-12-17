@@ -12,9 +12,7 @@ class DNNLConvBlockedKernel : public DNNLKernel<NumF, HeightF, WidthF>
     // Params: dimensions
     void Init(platform_info &pi, int n, int c, int h, int w);
 
-  private:
-     std::unique_ptr<dnnl::memory> user_src_;
-     std::unique_ptr<dnnl::memory> user_weights_;
-     std::unique_ptr<dnnl::memory> user_bias_;
+    // Registration of kernel
+    ~DNNLConvBlockedKernel();
 };
 #endif

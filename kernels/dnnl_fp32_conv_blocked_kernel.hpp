@@ -12,7 +12,9 @@ class DNNLConvBlockedKernel : public DNNLKernel<NumF, HeightF, WidthF>
     // Params: dimensions
     void Init(platform_info &pi, int n, int c, int h, int w);
 
-    // Registration of kernel
-    ~DNNLConvBlockedKernel();
+    void ShowInfo(void);
+
+  private:
+   void InitializeData(float* ptr, unsigned int sized);
 };
 #endif

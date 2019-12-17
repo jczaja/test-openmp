@@ -64,3 +64,41 @@ void DNNLConvBlockedKernel::Init(platform_info &pi, int n, int c, int h, int w)
   conv_args_[DNNL_ARG_BIAS] = *bias_;  
   conv_args_[DNNL_ARG_DST] = *dst_;  
 }
+
+void DNNLConvBlockedKernel::InitializeData(float* ptr, unsigned int sized)
+{
+  // Init with some random data
+  for(unsigned int i=0; i< sized; ++i) {
+      ptr[i] = i%13;
+  }
+}
+
+void DNNLConvBlockedKernel::ShowInfo(void)
+{
+  auto src_md = src_->get_desc();
+  auto dims = src_md.data.dims;
+  int n = dims[0];
+  int c = dims[1];
+  int h = dims[2];
+  int w = dims[3];
+
+  auto dst_md = dst_->get_desc();
+  dims = dst_md.data.dims;
+  int oc = dims[1];
+  int oh = dims[2];
+  int ow = dims[3];
+
+  std::cout << std::endl << " DNNL Blocked Conv " << n << "x" << c << "x" 
+         << h << "x" << w << " " << NumF << "x" << HeightF << "x" << WidthF << std::endl
+              << std::endl <<
+  "   batch Size: "<< n << std::endl <<
+  "   channel size: "<< c << std::endl <<
+  "   height: "<< h << std::endl <<
+  "   width: "<< w << std::endl <<
+  "   num_filters: " << NumF << std::endl <<
+  "   filter height: " << HeightF << std::endl <<
+  "   filter_width: " << WidthF << std::endl << 
+  "   output channel size: "<< oc << std::endl <<
+  "   output height: "<< oh << std::endl <<
+  "   output width: "<< ow << std::endl << std::endl;
+}

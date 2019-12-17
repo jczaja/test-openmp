@@ -190,3 +190,4 @@ vmovups YMMWORD PTR [rax+0x420],ymm11
 
 problem is that there is a chain dependency among instructions. And for such an easy operatin it is unavoidable.
 
+Adam or Michal to make faster LayerNorm

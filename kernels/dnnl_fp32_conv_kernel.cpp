@@ -106,24 +106,24 @@ template<unsigned int NF, unsigned int HF, unsigned int WF>
 DNNLKernel<NF, HF, WF>::~DNNLKernel()
 {
   if (src_ ) {
-   std::cout << "DNNL NCHW conv " << std::to_string(NF) << "x" << 
+   std::cout << "DNNL conv " << std::to_string(NF) << "x" << 
        std::to_string(HF) << "x" << std::to_string(WF) << 
-       " NCHW SRC First element: " << static_cast<float*>(src_->get_data_handle())[0] << std::endl;
+       " SRC First element: " << static_cast<float*>(src_->get_data_handle())[0] << std::endl;
   }
   if (bias_ ) {
-   std::cout << "DNNL NCHW conv " << std::to_string(NF) << "x" << 
+   std::cout << "DNNL conv " << std::to_string(NF) << "x" << 
        std::to_string(HF) << "x" << std::to_string(WF) << 
-       " NCHW BIAS First element: " << static_cast<float*>(bias_->get_data_handle())[0] << std::endl;
+       " BIAS First element: " << static_cast<float*>(bias_->get_data_handle())[0] << std::endl;
   }
   if (weights_ ) {
-   std::cout << "DNNL NCHW conv " << std::to_string(NF) << "x" << 
+   std::cout << "DNNL conv " << std::to_string(NF) << "x" << 
        std::to_string(HF) << "x" << std::to_string(WF) << 
-       " NCHW WEIGHTS First element: " << static_cast<float*>(weights_->get_data_handle())[0] << std::endl;
+       " WEIGHTS First element: " << static_cast<float*>(weights_->get_data_handle())[0] << std::endl;
   }
   if (dst_ ) {
-   std::cout << "DNNL NCHW conv " << std::to_string(NF) << "x" << 
+   std::cout << "DNNL conv " << std::to_string(NF) << "x" << 
        std::to_string(HF) << "x" << std::to_string(WF) << 
-       " NCHW DST First element: " << static_cast<float*>(dst_->get_data_handle())[0] << std::endl;
+       " DST First element: " << static_cast<float*>(dst_->get_data_handle())[0] << std::endl;
   }
 }
 

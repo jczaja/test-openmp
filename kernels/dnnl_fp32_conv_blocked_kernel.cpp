@@ -5,7 +5,8 @@
 
 REGISTER_KERNEL(DNNLConvBlockedKernel);
 
-DNNLConvBlockedKernel::DNNLConvBlockedKernel()
+DNNLConvBlockedKernel::DNNLConvBlockedKernel() :
+DNNLKernel(false)
 {
   // Register kernel
   kernels[std::string("dnnl_blocked_conv")] = this;

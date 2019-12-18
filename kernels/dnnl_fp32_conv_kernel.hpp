@@ -12,19 +12,19 @@ class DNNLKernel : public BaseKernel {
 
  public:
   // Registration of kernel
-  DNNLKernel();
+  DNNLKernel(bool register_kernel = true);
 
   // Initialization
   // Params: dimensions
-  void Init(platform_info &pi, int n, int c, int h, int w);
+  virtual void Init(platform_info &pi, int n, int c, int h, int w);
 
   // Measured Execution of kernel
   // params: number of repetitions to execute 
   // returns: total time in cycles as measured by TSC
-  void Run(int num_reps);
+  virtual void Run(int num_reps);
 
   // cleaning up and printing result
-  ~DNNLKernel();
+  virtual ~DNNLKernel();
 
   void ShowInfo(void);
 

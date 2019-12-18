@@ -9,10 +9,12 @@ endfunction()
 
 macro(get_data_traffic_count DATA_PATTERN)
 set(awk_script "{\$1=\$1\;print}")
+set(sed_script "s:,::g")
 execute_process(
     COMMAND echo ${ANALYSIS_RESULT}
     COMMAND grep -e ${DATA_PATTERN}
     COMMAND awk ${awk_script} # Remove trailing white characters
+    COMMAND sed ${sed_script} # Remove commands from numeric data
     COMMAND cut -d " " -f 1     # Get value of counter given
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     OUTPUT_VARIABLE MIB_RAW

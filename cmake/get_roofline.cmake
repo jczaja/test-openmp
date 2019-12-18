@@ -1,4 +1,4 @@
-macro(create_gnuplot_script CPU_THRGHPT MEMORY_THRGHPT OI RUNTIME_PERFORMANCE HW_INFO ALGO_INFO)
+macro(create_gnuplot_script CPU_THRGHPT MEMORY_THRGHPT OI EXECUTION_TIME RUNTIME_PERFORMANCE HW_INFO ALGO_INFO)
 set(script "set terminal pngcairo dashed size 1920, 1080")
 set(script "${script}\n set output \"roofline-${ALGO_INFO}.png\"")
 set(script "${script}\n set xlabel \"Operational Intensity [FLOPS/Byte]\"")
@@ -20,7 +20,7 @@ set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) noh
 set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.005 fc  rgb \"black\" fs solid")
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigid_point,cpu_roof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
-set(script "${script}\n set label \"Runtime performance: ${RUNTIME_PERFORMANCE} GFLOPS  \" at scr 0.4, 0.35 textcolor \"black\"") 
+set(script "${script}\n set label \"Throughput: ${RUNTIME_PERFORMANCE} GFLOPS\\nExecution time: ${EXECUTION_TIME} s\" at scr 0.4, 0.35 textcolor \"black\"") 
 set(script "${script}\n set label \"${ALGO_INFO}\" at first 0.95*${OI}, scr 0.25 textcolor \"black\" rotate by 90") 
 set(script "${script}\n set arrow from scr 0.5,0.4 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n MAX_GFLOPS = sprintf(\"%f GFLOPS\", roofline(${OI}))")
@@ -57,7 +57,7 @@ message(STATUS "Runtime performance: ${RUNTIME_PERFORMANCE}")
 string(REGEX REPLACE "\n$" "" OI_STRIPPED "${OI}")
 string(REGEX REPLACE "\n$" "" RUNTIME_PERFORMANCE_STRIPPED "${RUNTIME_PERFORMANCE}")
 
-create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO}" "${ALGO_INFO}")
+create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${EXECUTION_TIME}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO}" "${ALGO_INFO}")
 # Execute gnuplot using generated script
 execute_process(
     COMMAND ${GNUPLOT_EXECUTABLE} ${CMAKE_BINARY_DIR}/roofline.plot

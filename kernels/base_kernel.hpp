@@ -2,6 +2,7 @@
 #define _BASEKERNEL
 
 #include <string>
+#include <toolbox.h>
 
 #define COMMA ,
 #define REGISTER_KERNEL(T) extern std::unordered_map<std::string, BaseKernel*> kernels; \
@@ -11,8 +12,28 @@ class BaseKernel
 {
   public: 
     virtual void Init(platform_info &pi, int n, int c, int h, int w) = 0;
-    virtual void Run(int num_reps) = 0;
     virtual void ShowInfo(void) = 0;
+    virtual void RunSingle(void) = 0;
+    void Run(int num_reps) {
+#ifdef MEMORY_TRAFFIC_COUNT
+      auto mt = ToolBox(true); // Just overwritting caches
+#endif
+#ifdef RUNTIME_TEST
+      auto rt = Runtime(tsc_ghz_,false);
+#endif
+      for(int n = 0; n< num_reps; ++n) {
+#ifdef RUNTIME_TEST
+        rt.Start();
+#endif
+        RunSingle();  // Single iteration execution
+            //sleep(1);
+#ifdef RUNTIME_TEST
+        rt.Stop();
+#endif
+      }
+    }
+  public:
+   unsigned long long tsc_ghz_;
 };
 
 

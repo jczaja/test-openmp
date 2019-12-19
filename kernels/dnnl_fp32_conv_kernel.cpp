@@ -136,24 +136,3 @@ inline void DNNLKernel<NF, HF, WF>::RunSingle(void)
     asm volatile ("END dnnl Kernel");
 # endif
 }
-
-template<unsigned int NF, unsigned int HF, unsigned int WF>
-void DNNLKernel<NF, HF, WF>::Run(int num_reps)
-{
-#ifdef MEMORY_TRAFFIC_COUNT
-    auto mt = ToolBox(true); // Just overwritting caches
-#endif
-#ifdef RUNTIME_TEST
-    auto rt = Runtime(tsc_ghz_,false);
-#endif
-    for(int n = 0; n< num_reps; ++n) {
-#ifdef RUNTIME_TEST
-      rt.Start();
-#endif
-      RunSingle();  // Single iteration execution
-      //sleep(1);
-#ifdef RUNTIME_TEST
-      rt.Stop();
-#endif
-    }
-}

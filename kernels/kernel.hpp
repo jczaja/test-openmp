@@ -2,7 +2,6 @@
 #define _MYKERNEL
 
 #include <string>
-#include <toolbox.h>
 #include <kernels/base_kernel.hpp>
 
 class Kernel : public BaseKernel
@@ -15,11 +14,6 @@ class Kernel : public BaseKernel
   // Initialization
   // Params: dimensions
   void Init(platform_info &pi, int n, int c, int h, int w);
-
-  // Measured Execution of kernel
-  // params: number of repetitions to execute 
-  // returns: total time in cycles as measured by TSC
-  void Run(int num_reps);
 
   void ShowInfo(void);
 
@@ -36,7 +30,6 @@ class Kernel : public BaseKernel
    void RunSingle(void);
 
  private:
-   unsigned long long tsc_ghz_;
    unsigned int sized_;
    float *buffer_;
    float result_; 

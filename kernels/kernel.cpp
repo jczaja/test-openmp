@@ -45,28 +45,3 @@ inline void Kernel::RunSingle(void)
     asm volatile ("END sum Kernel");
 # endif
 }
-
-void Kernel::Run(int num_reps)
-{
-#ifdef MEMORY_TRAFFIC_COUNT
-    auto mt = ToolBox(true); // Just overwritting caches
-    //mt.StartCounting();
-#endif
-#ifdef RUNTIME_TEST
-    auto rt = Runtime(tsc_ghz_,false);
-#endif
-    for(int n = 0; n< num_reps; ++n) {
-#ifdef RUNTIME_TEST
-      rt.Start();
-#endif
-      RunSingle();  // Single iteration execution
-#ifdef RUNTIME_TEST
-      rt.Stop();
-#endif
-    }
-#ifdef MEMORY_TRAFFIC_COUNT
-    //mt.StopCounting();
-#endif
-
-}
-

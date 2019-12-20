@@ -13,7 +13,7 @@ set(script "${script}\n rigidpoint = ${CPU_THROUGHPUT}/${MEMORY_THRGHPT}")    # 
 set(script "${script}\n set xrange[0.0001:max(rigidpoint,${OI})*10.0]")
 set(script "${script}\n set yrange[0.0001:${CPU_THRGHPT}*10.0]")
 set(script "${script}\n min(x,y) = x < y ? x : y")
-set(script "${script}\n memroof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline
+set(script "${script}\n memroof(x = x *${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n cpuroof = ${CPU_THROUGHPUT}")          # cpu_roofline
 set(script "${script}\n roofline(x) = min(memroof(x),cpuroof)")
 set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) nohead dt 2")
@@ -56,6 +56,7 @@ message(STATUS "Runtime performance: ${RUNTIME_PERFORMANCE}")
 
 # convert Execution time to mili seconds
 floatexpr("${EXECUTION_TIME}*1000.0" EXECUTION_TIME_MS)
+string(REGEX REPLACE "\n$" "" EXECUTION_TIME_MS_STRIPPED "${EXECUTION_TIME_MS}")
 
 string(REGEX REPLACE "\n$" "" OI_STRIPPED "${OI}")
 string(REGEX REPLACE "\n$" "" RUNTIME_PERFORMANCE_STRIPPED "${RUNTIME_PERFORMANCE}")

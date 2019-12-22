@@ -72,7 +72,7 @@ message(STATUS "execution_writes: ${data_writes}")
 message(STATUS "no_execution_reads: ${no_execution_reads}")
 message(STATUS "no_execution_writes: ${no_execution_writes}")
 # Substract baseline memory usage from total and conver MiB to bytes
-set(traffic_equation "1024.0*1024.0*${data_reads}-${no_execution_reads}+${data_writes}-${no_execution_writes}")
+set(traffic_equation "1024.0*1024.0*(${data_reads}-${no_execution_reads}+${data_writes}-${no_execution_writes})")
 string(STRIP ${traffic_equation} traffic_equation_stripped)
 # Combine reads and writes to get total traffic and
 # write it into traffic.txt 

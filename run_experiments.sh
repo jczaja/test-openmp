@@ -12,7 +12,7 @@ else
   pushd build-conv-nchw_warm_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_nchw_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_nchw_conv_warm_caches
@@ -24,7 +24,7 @@ else
   pushd build-conv-nchw_cold_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_nchw_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 -DCOLD_CACHES=true
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_nchw_conv_cold_caches
@@ -36,7 +36,7 @@ else
   pushd build-conv-blocked_warm_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_blocked_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_blocked_conv_warm_caches
@@ -48,7 +48,7 @@ else
   pushd build-conv-blocked_cold_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_blocked_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 -DCOLD_CACHES=true
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_blocked_conv_cold_caches
@@ -60,7 +60,7 @@ else
   pushd build-tnc-layer_norm_warm_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm/
@@ -72,7 +72,7 @@ else
   pushd build-tnc-layer_norm_cold_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=true
   sudo make enable_turbo_boost
-  make -j test-openmp-gomp
+  make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
   cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm_cold_caches

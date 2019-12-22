@@ -118,7 +118,7 @@ if (NOT DEFINED COLD_CACHES)
 set(COLD_CACHES "false")
 endif()
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO}")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES}")
 
 add_custom_target(
 work

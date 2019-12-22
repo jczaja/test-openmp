@@ -113,6 +113,10 @@ endif()
 if (NOT DEFINED ALGO)
 set(ALGO "sum")
 endif()
+
+if (NOT DEFINED COLD_CACHES)
+set(COLD_CACHES "false")
+endif()
 ###################################
 message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO}")
 
@@ -163,7 +167,7 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_COMMAND} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_traffic.cmake
+COMMAND ${CMAKE_COMMAND} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_traffic.cmake
 DEPENDS test-memory-traffic 
 )
 
@@ -205,7 +209,7 @@ COMMAND cmake -DVAL="0" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake )
 add_custom_target(
 runtime
 COMMENT "Performing runtime test (Make sure TURBO BOOST is disabled!)"
-COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
 )
 
@@ -227,3 +231,4 @@ add_test( alexnet_c1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 
 add_test( alexnet_c1b ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 3 --height=227 --width=227 --algo=dnnl_blocked_conv --num_reps 2)
 add_test( alexnet_r1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 96 --height=55 --width=55 --algo=dnnl_nchw_relu --num_reps 2)
 add_test( bert_ln ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 768 --height=32 --width=4 --algo=dnnl_tnc_layer_norm --num_reps 2)
+add_test( bert_ln_cold ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 768 --height=32 --width=4 --algo=dnnl_tnc_layer_norm --cold_caches=true --num_reps 2)

@@ -43,7 +43,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/algo_info.txt ${ALGO_INFO})
 endmacro()
 
 function(count_traffic num_reps data_reads data_writes)
-execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} 
+execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} 
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_cpu_info()

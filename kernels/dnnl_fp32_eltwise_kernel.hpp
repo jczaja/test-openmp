@@ -21,7 +21,7 @@ class DNNLEltwiseKernel : public BaseKernel {
   // cleaning up and printing result
   ~DNNLEltwiseKernel();
 
-  void ShowInfo(void);
+  void ShowInfo(bool cold_caches);
 
  protected:
   void RunSingle(void);

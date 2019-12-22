@@ -74,7 +74,7 @@ void DNNLConvBlockedKernel::InitializeData(float* ptr, unsigned int sized)
   }
 }
 
-void DNNLConvBlockedKernel::ShowInfo(void)
+void DNNLConvBlockedKernel::ShowInfo(bool cold_caches)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
@@ -90,8 +90,9 @@ void DNNLConvBlockedKernel::ShowInfo(void)
   int ow = dims[3];
 
   std::cout << std::endl << " DNNL Blocked Conv " << n << "x" << c << "x" 
-         << h << "x" << w << " " << NumF << "x" << HeightF << "x" << WidthF << std::endl
-              << std::endl <<
+         << h << "x" << w << " " << NumF << "x" << HeightF << "x" << WidthF << 
+        " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+        std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<

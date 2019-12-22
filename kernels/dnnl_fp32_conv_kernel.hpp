@@ -21,7 +21,7 @@ class DNNLKernel : public BaseKernel {
   // cleaning up and printing result
   virtual ~DNNLKernel();
 
-  void ShowInfo(void);
+  void ShowInfo(bool cold_caches);
 
   protected:
    void RunSingle(void);

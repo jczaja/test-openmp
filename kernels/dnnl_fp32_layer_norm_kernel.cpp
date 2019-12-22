@@ -62,7 +62,7 @@ void DNNLLayerNormKernel::InitializeData(float* ptr, unsigned int sized)
   }
 }
 
-void DNNLLayerNormKernel::ShowInfo(void)
+void DNNLLayerNormKernel::ShowInfo(bool cold_caches)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
@@ -70,7 +70,9 @@ void DNNLLayerNormKernel::ShowInfo(void)
   int n = dims[1];
   int c = dims[2];
 
-  std::cout << std::endl << " DNNL TNC Layer Norm " << t << "x" << n << "x" << c << std::endl << std::endl <<
+  std::cout << std::endl << " DNNL TNC Layer Norm " << t << "x" << n << "x" << c << 
+  " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+  std::endl << std::endl <<
   "   sequence length: "<<  t << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl << std::endl;

@@ -53,6 +53,7 @@ DEFINE_string(algo, "sum", mystr.c_str());
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
+DEFINE_bool(cold_caches, false, "Whether to perform execution with caches cold");
 
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
@@ -477,8 +478,12 @@ int main(int argc, char** argv)
       return -1;
     } else {
        kernels[FLAGS_algo]->Init(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width);
-       kernels[FLAGS_algo]->ShowInfo();
-       kernels[FLAGS_algo]->Run(FLAGS_num_reps);
+       kernels[FLAGS_algo]->ShowInfo(FLAGS_cold_caches);
+       if (FLAGS_cold_caches == true) {
+         kernels[FLAGS_algo]->RunCold(FLAGS_num_reps);
+       } else {
+         kernels[FLAGS_algo]->RunWarm(FLAGS_num_reps);
+       }
     }
 
 	return 0;

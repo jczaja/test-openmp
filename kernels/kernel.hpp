@@ -15,7 +15,7 @@ class Kernel : public BaseKernel
   // Params: dimensions
   void Init(platform_info &pi, int n, int c, int h, int w);
 
-  void ShowInfo(void);
+  void ShowInfo(bool cold_caches);
 
   // cleaning up and printing result
   ~Kernel() {

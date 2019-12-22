@@ -49,7 +49,7 @@ void DNNLEltwiseKernel<algo, alpha,beta>::InitializeData(float* ptr, unsigned in
 }
 
 template<dnnl::algorithm algo, int alpha, int beta>
-void DNNLEltwiseKernel<algo, alpha,beta>::ShowInfo(void)
+void DNNLEltwiseKernel<algo, alpha,beta>::ShowInfo(bool cold_caches)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
@@ -59,7 +59,9 @@ void DNNLEltwiseKernel<algo, alpha,beta>::ShowInfo(void)
   int w = dims[3];
 
   std::cout << std::endl << " DNNL NCHW eltwise " << n << "x" << c 
-        << "x" << h << "x" << w << std::endl << std::endl <<
+        << "x" << h << "x" << w << 
+        " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+        std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<

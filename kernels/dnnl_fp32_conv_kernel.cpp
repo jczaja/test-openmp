@@ -74,7 +74,7 @@ void DNNLKernel<NF, HF, WF>::InitializeData(float* ptr, unsigned int sized)
 }
 
 template<unsigned int NF, unsigned int HF, unsigned int WF>
-void DNNLKernel<NF, HF, WF>::ShowInfo(void)
+void DNNLKernel<NF, HF, WF>::ShowInfo(bool cold_caches)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
@@ -90,8 +90,9 @@ void DNNLKernel<NF, HF, WF>::ShowInfo(void)
   int ow = dims[3];
 
   std::cout << std::endl << " DNNL NCHW Conv " << n << "x" << c << "x" 
-         << h << "x" << w << " " << NF << "x" << HF << "x" << WF << std::endl
-              << std::endl <<
+         << h << "x" << w << " " << NF << "x" << HF << "x" << WF << 
+      " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+      std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<
   "   height: "<< h << std::endl <<

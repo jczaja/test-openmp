@@ -19,7 +19,7 @@ class BaseKernel
       auto mt = ToolBox(true); // Just overwritting caches
 #endif
 #ifdef RUNTIME_TEST
-      auto rt = Runtime(tsc_ghz_,false);
+      auto rt = Runtime(tsc_ghz_,true);
 #endif
       for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST

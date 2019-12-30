@@ -171,12 +171,6 @@ Actual (estimated) memory accesses: 3.00333e+08
 actual work = 50429952
 theoretical work ((src[i] - mean[i])/bias[i] ) =  50331648
 
-How to do warm cache?
-
-- implement warm caches
-- plot should have warm and cold measures
-- look at assembly of LayerNorm
-- Start making actual paper
 
 Analysis of Layer Norm kernel
 
@@ -191,3 +185,6 @@ vmovups YMMWORD PTR [rax+0x420],ymm11
 problem is that there is a chain dependency among instructions. And for such an easy operatin it is unavoidable.
 
 Adam or Michal to make faster LayerNorm
+
+
+memory traffic from IMC is a measure computed as an average over single measures.

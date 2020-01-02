@@ -55,7 +55,7 @@ else
   popd
 
   # dnnl tnc layer norm, warm caches
-  mkdir -p $DATA_DIR/dnnl_tnc_layer_norm
+  mkdir -p $DATA_DIR/dnnl_tnc_layer_norm_warm_caches
   mkdir build-tnc-layer_norm_warm_caches
   pushd build-tnc-layer_norm_warm_caches
   cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32

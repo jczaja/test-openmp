@@ -161,14 +161,25 @@ Which are of siginficant size e.g. hundreds of megabytes
 LayerNorm is just one building block, it is limited usabilty without practical usage.
 How does it help in PaddlePaddle
 
-Layer Norm Analysis:
+Layer Norm Analysis(throughput):
 Src shape = N=256 C=768 H=32 W=4 (size in bytes: 100663296)
 mean shape = H=32 W=4 N=256 (size in bytes: 131072) 
 variance shape = H=32 W=4 N=256 (size in bytes: 131072) 
 dst shape = N=256 C=768 H=32 W=4 (size in bytes: 100663296)
 Theoretical memory accesses: 100663296 + 131072 + 131072 + 100663296 = 201588736 = 192 MB 
 Actual (estimated) memory accesses: 3.00333e+08 
-actual work = 50429952
+actual work = 
+theoretical work ((src[i] - mean[i])/bias[i] ) =  
+
+
+Layer Norm Analysis(latency):
+Src shape = N=1 C=768 H=32 W=4 (size in bytes: 393216)
+mean shape = H=32 W=4 N=1 (size in bytes: 512) 
+variance shape = H=32 W=4 N=1 (size in bytes: 512) 
+dst shape = N=1 C=768 H=32 W=4 (size in bytes: 393216)
+Theoretical memory accesses:  393216 + 512 + 512 + 393216 =787456 
+Actual (estimated) memory accesses: 
+actual work = 
 theoretical work ((src[i] - mean[i])/bias[i] ) =  50331648
 
 
@@ -188,3 +199,6 @@ Adam or Michal to make faster LayerNorm
 
 
 memory traffic from IMC is a measure computed as an average over single measures.
+
+
+Problem with measuring warm traffic

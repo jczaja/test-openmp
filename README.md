@@ -197,8 +197,7 @@ problem is that there is a chain dependency among instructions. And for such an 
 
 Adam or Michal to make faster LayerNorm
 
-
 memory traffic from IMC is a measure computed as an average over single measures.
-
-
 Problem with measuring warm traffic
+
+Test measure on Xeon of memory traffic 

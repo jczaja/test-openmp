@@ -412,9 +412,13 @@ void run_mem_test(platform_info& pi)
   };
 
   std::vector<unsigned long long> mem_nontemp_jit_write_times;
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 32 ? 32 : 1));
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 64 ? 64 : 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
-  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 4 ? 4 : 1));
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 8 ? 8 : 1));
+  mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 16 ? 16 : 1));
   auto mem_nontemp_jit_write_t = *(std::min_element(mem_nontemp_jit_write_times.begin(), mem_nontemp_jit_write_times.end()));
   auto nontemp_jit_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_jit_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Non-Temporal JIT Write Throughput: " << nontemp_jit_write_throughput << " [GB/s]" << std::endl;

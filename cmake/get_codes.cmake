@@ -54,7 +54,7 @@ endfunction()
 
 execute_process(
 COMMAND examples/showevtinfo
-COMMAND grep ": FP_ARITH_INST_RETIRED" -A 10
+COMMAND grep ": FP_ARITH_INST_RETIRED" -A 12
 WORKING_DIRECTORY ${PERFMON}
 OUTPUT_VARIABLE SCAN
 )

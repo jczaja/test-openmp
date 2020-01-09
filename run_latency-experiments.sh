@@ -63,7 +63,7 @@ else
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
   make roofline
-  cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm/
+  cp roofline* cputest.txt memtest.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm_warm_caches/
   popd
 
   # dnnl tnc layer norm, cold caches

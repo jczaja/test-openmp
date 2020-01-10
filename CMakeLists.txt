@@ -195,7 +195,7 @@ memtest
 COMMENT "Performing peak memory test (using numactl):"
 COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt & numactl -m 1 -N 1 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-2.txt
 DEPENDS test-openmp-gomp
-VERBATIM
+#VERBATIM # VERBATIM environemnt does add quotes around & character. Not sure why
 )
 endif()
 

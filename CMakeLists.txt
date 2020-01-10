@@ -177,13 +177,15 @@ DEPENDS test-memory-traffic
 # and cpu throughput [GFLOPS/sec]
 
 # If possible use numactl to enfroce allocation and execution on the same socket
+# For Xeons we run two copies of program (one per socket) in parallel to get total bandwidth 
 # This allow to get best Memory throughput on Xeon platforms
 find_program(ISNUMA NAMES numactl)
 if(ISNUMA STREQUAL "ISNUMA-NOTFOUND")
 add_custom_target(
 memtest
 COMMENT "Performing peak memory test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
+COMMAND echo "0" | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 VERBATIM
 )
@@ -191,7 +193,7 @@ else()
 add_custom_target(
 memtest
 COMMENT "Performing peak memory test (using numactl):"
-COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest.txt
+COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt & numactl -m 1 -N 1 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 VERBATIM
 )

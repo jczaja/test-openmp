@@ -175,6 +175,11 @@ DEPENDS test-memory-traffic
 # It is also using gnuplot for generation of script
 # it does need memory throughput [GB/sec]
 # and cpu throughput [GFLOPS/sec]
+
+# If possible use numactl to enfroce allocation and execution on the same socket
+# This allow to get best Memory throughput on Xeon platforms
+find_program(ISNUMA NAMES numactl)
+if(ISNUMA STREQUAL "ISNUMA-NOTFOUND")
 add_custom_target(
 memtest
 COMMENT "Performing peak memory test:"
@@ -182,6 +187,16 @@ COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut 
 DEPENDS test-openmp-gomp
 VERBATIM
 )
+else()
+add_custom_target(
+memtest
+COMMENT "Performing peak memory test (using numactl):"
+COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest.txt
+DEPENDS test-openmp-gomp
+VERBATIM
+)
+endif()
+
 
 add_custom_target(
 cputest

@@ -447,7 +447,9 @@ int main(int argc, char** argv)
 
     // If user requested single core then suppress cores limit
     pi.gflops = FLAGS_single_core ? pi.gflops/pi.num_total_phys_cores : pi.gflops; 
-    pi.num_total_phys_cores = FLAGS_single_core ? 1 : pi.num_total_phys_cores; 
+    pi.num_total_phys_cores = FLAGS_single_core ? 1 : pi.num_total_phys_cores;
+    // Reduce default number of openmp threads used for computation
+    omp_set_num_threads(pi.num_total_phys_cores);
 
     // CPU thoughput test
     if (FLAGS_cputest) {

@@ -1,11 +1,6 @@
 # test-openmp
 Little testing program for various openmp concepts
 
-
-
-
-
-
 article:
 Counters do not show vcomis instructions which is crucial in search for maximal value eg. used in pooling and softmax
 
@@ -200,4 +195,5 @@ Adam or Michal to make faster LayerNorm
 memory traffic from IMC is a measure computed as an average over single measures.
 Problem with measuring warm traffic
 
-Test measure on Xeon of memory traffic 
+Make Single Core in cmake lists txt
+

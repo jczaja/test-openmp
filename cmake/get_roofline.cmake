@@ -17,7 +17,7 @@ set(script "${script}\n memroof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n cpuroof = ${CPU_THROUGHPUT}")          # cpu_roofline
 set(script "${script}\n roofline(x) = min(memroof(x),cpuroof)")
 set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) nohead dt 2")
-set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.005 fc  rgb \"black\" fs solid")
+set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.004 fc  rgb \"black\" fs solid")
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigidpoint,cpuroof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
 set(script "${script}\n set label \"Throughput: ${RUNTIME_PERFORMANCE} GFLOPS\\nExecution time: ${EXECUTION_TIME} ms\" at scr 0.4, 0.35 textcolor \"black\"") 

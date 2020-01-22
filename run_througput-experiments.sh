@@ -1,80 +1,62 @@
 #!/bin/bash
 
+# Target_data_dir, local dir, algo, cache, threading
+function conv_experiment()
+{
+  mkdir -p $1
+  mkdir $2
+  pushd $2
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 -DCOLD_CACHES=$4 -DTHREADING=$5
+  sudo make enable_turbo_boost
+  make -j 4 test-openmp-gomp
+  sudo make disable_turbo_boost
+  make roofline
+  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $1
+  popd
+}
+
+# Target_data_dir, local dir, algo, cache, threading
+function layer_norm_experiment()
+{
+  mkdir -p $1
+  mkdir $2
+  pushd $2
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=$4 -DTHREADING=$5
+  sudo make enable_turbo_boost
+  make -j 4 test-openmp-gomp
+  sudo make disable_turbo_boost
+  make roofline
+  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $1
+  popd
+}
+
 DATA_DIR="$PWD/experiment-throughput-`date -I`"
 
 if [ -d $DATA_DIR ] 
 then
   echo "Directory $PWD/experiment-throughput-`date -I` exists.  Quitting not too overwrite existing results." 
 else
-  # dnnl nchw conv , warmed caches
-  mkdir -p $DATA_DIR/dnnl_nchw_conv_warm_caches
-  mkdir build-conv-nchw_warm_caches
-  pushd build-conv-nchw_warm_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_nchw_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_nchw_conv_warm_caches
-  popd
+  # FULL SOCKETS
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches build-conv-nchw-warm-caches dnnl_nchw_conv false full
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_cold_caches build-conv-nchw-cold-caches dnnl_nchw_conv true full
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_warm_caches build-conv-blocked-warm-caches dnnl_blocked_conv false full
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_cold_caches build-conv-blocked-cold-caches dnnl_blocked_conv true full
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches build-tnc-layer_norm_warm_caches dnnl_tnc_layer_norm false full
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches build-tnc-layer_norm_cold_caches dnnl_tnc_layer_norm true full
 
-  # dnnl nchw conv , cold caches
-  mkdir -p $DATA_DIR/dnnl_nchw_conv_cold_caches
-  mkdir build-conv-nchw_cold_caches
-  pushd build-conv-nchw_cold_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_nchw_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 -DCOLD_CACHES=true
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_nchw_conv_cold_caches
-  popd
+  # ONE SOCKET
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches-socket build-conv-nchw-warm-caches-socket dnnl_nchw_conv false socket
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_cold_caches-socket build-conv-nchw-cold-caches-socket dnnl_nchw_conv true socket
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_warm_caches-socket build-conv-blocked-warm-caches-socket dnnl_blocked_conv false socket
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_cold_caches-socket build-conv-blocked-cold-caches-socket dnnl_blocked_conv true socket
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-socket build-tnc-layer_norm_warm_caches-socket dnnl_tnc_layer_norm false socket
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-socket build-tnc-layer_norm_cold_caches-socket dnnl_tnc_layer_norm true socket
 
-  # dnnl blocked conv , warm caches
-  mkdir -p $DATA_DIR/dnnl_blocked_conv_warm_caches
-  mkdir build-conv-blocked_warm_caches
-  pushd build-conv-blocked_warm_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_blocked_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_blocked_conv_warm_caches
-  popd
-
-  # dnnl blocked conv , cold caches
-  mkdir -p $DATA_DIR/dnnl_blocked_conv_cold_caches
-  mkdir build-conv-blocked_cold_caches
-  pushd build-conv-blocked_cold_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_blocked_conv -DN=256 -DC=3 -DW=227 -DH=227 -DNF=96 -DHF=11 -DWF=11 -DCOLD_CACHES=true
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_blocked_conv_cold_caches
-  popd
-
-  # dnnl tnc layer norm, warm caches
-  mkdir -p $DATA_DIR/dnnl_tnc_layer_norm_warm_caches
-  mkdir build-tnc-layer_norm_warm_caches
-  pushd build-tnc-layer_norm_warm_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm_warm_caches/
-  popd
-
-  # dnnl tnc layer norm, cold caches
-  mkdir -p $DATA_DIR/dnnl_tnc_layer_norm_cold_caches
-  mkdir build-tnc-layer_norm_cold_caches
-  pushd build-tnc-layer_norm_cold_caches
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=true
-  sudo make enable_turbo_boost
-  make -j 4 test-openmp-gomp
-  sudo make disable_turbo_boost
-  make roofline
-  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $DATA_DIR/dnnl_tnc_layer_norm_cold_caches
-  popd
+  # SINGLE THREAD
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches-single build-conv-nchw-warm-caches-single dnnl_nchw_conv false single
+  conv_experiment $DATA_DIR/dnnl_nchw_conv_cold_caches-single build-conv-nchw-cold-caches-single dnnl_nchw_conv true single
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_warm_caches-single build-conv-blocked-warm-caches-single dnnl_blocked_conv false single
+  conv_experiment $DATA_DIR/dnnl_blocked_conv_cold_caches-single build-conv-blocked-cold-caches-single dnnl_blocked_conv true single
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-single build-tnc-layer_norm_warm_caches-single dnnl_tnc_layer_norm false single
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-single build-tnc-layer_norm_cold_caches-single dnnl_tnc_layer_norm true single
 fi

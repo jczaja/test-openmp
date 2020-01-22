@@ -50,9 +50,9 @@ void GenerateHelpString(std::string& mystr)
 std::string mystr(200,' ');
 
 DEFINE_string(algo, "sum", mystr.c_str());
+DEFINE_string(threading, "full", "Threading model of execution: single-threaded, single-socket, full capabilities (two sockets if available)");
 DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
-DEFINE_bool(single_core, false, "Whether to perform execution using single CPU core only");
 DEFINE_bool(cold_caches, false, "Whether to perform execution with caches cold");
 
 struct CpuBench : public Xbyak::CodeGenerator {
@@ -311,6 +311,11 @@ void run_cpu_test( platform_info& pi)
   const int num_fmas = 28*9;
   const int num_loops = 100;
   const unsigned long long num_iterations = 1000000;
+
+
+  std::cout << "num_total_phys_cores: " << pi.num_total_phys_cores << " num_iterations: " << num_iterations << std::endl;
+
+
   //CpuBench benchmark(num_fmas, num_loops);
   CpuBench benchmark(num_fmas/28, num_loops);
   void (*bench_code)(void) = (void (*)(void))benchmark.getCode();
@@ -397,18 +402,6 @@ void run_mem_test(platform_info& pi)
       return __rdtsc() - start_t;
   };
 
-
-  // Copying data as fast as possible
-  auto memory_copy = [&](char* dst, char* src , size_t total_size, int num_threads) {
-      auto size_to_copy = total_size/num_threads;
-      auto start_t = __rdtsc();
-      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
-      for(int i=0; i < num_threads; ++i) { 
-          memcpy(dst + i*size_to_copy,src+i*size_to_copy,size_to_copy);
-      }
-      return __rdtsc() - start_t;
-  };
-
   std::vector<unsigned long long> mem_nontemp_jit_write_times;
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
@@ -445,11 +438,19 @@ int main(int argc, char** argv)
     platform_info pi;
     machine.get_platform_info(pi);
 
+    std::unordered_map<std::string, int> execution_threads;
+    execution_threads["single"] = 1; 
+    execution_threads["socket"] = pi.num_physical_processors_per_socket; 
+    execution_threads["full"] = pi.num_total_phys_cores; 
+
     // If user requested single core then suppress cores limit
-    pi.gflops = FLAGS_single_core ? pi.gflops/pi.num_total_phys_cores : pi.gflops; 
-    pi.num_total_phys_cores = FLAGS_single_core ? 1 : pi.num_total_phys_cores;
+    pi.gflops = pi.gflops/pi.num_total_phys_cores*execution_threads[FLAGS_threading];
+    pi.num_total_phys_cores = execution_threads[FLAGS_threading];
     // Reduce default number of openmp threads used for computation
-    omp_set_num_threads(pi.num_total_phys_cores);
+    std::cout << "NUM_TOTAL_PHYS_CORES: " << pi.num_total_phys_cores << std::endl;
+
+    std::cout << "  Execution threads: " <<  execution_threads[FLAGS_threading] << std::endl;
+
 
     // CPU thoughput test
     if (FLAGS_cputest) {
@@ -462,6 +463,8 @@ int main(int argc, char** argv)
        run_mem_test(pi);
        return 0;
     }
+
+    omp_set_num_threads(execution_threads[FLAGS_threading]);
 
     if (kernels.find(FLAGS_algo) == kernels.end()) {
       std::cerr << "ERROR: Selected algorithm: " << FLAGS_algo << " not available!" << std::endl;

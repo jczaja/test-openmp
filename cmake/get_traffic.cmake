@@ -30,7 +30,16 @@ execute_process(
     COMMAND cut -d ":" -f 2     # Get value of counter given
     OUTPUT_VARIABLE CPU_MODEL
 )
-file(WRITE ${CMAKE_BINARY_DIR}/cpu_info.txt ${CPU_MODEL})
+
+if(THREADING STREQUAL "single")
+set(THREADING_STR "(single core)")
+elseif (THREADING STREQUAL "socket")
+set(THREADING_STR "(single socket)")
+else()
+set(THREADING_STR "(two sockets)")
+endif()
+
+file(WRITE ${CMAKE_BINARY_DIR}/cpu_info.txt "${CPU_MODEL} ${THREADING_STR}")
 string(FIND ${CPU_MODEL} "Xeon" out)
 if (NOT ("${out}" STREQUAL "-1"))
 set(Xeon "ON")
@@ -47,7 +56,7 @@ file(WRITE ${CMAKE_BINARY_DIR}/algo_info.txt ${ALGO_INFO})
 endmacro()
 
 function(count_traffic num_reps data_reads data_writes)
-execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} 
+execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} --threading=${THREADING}
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_algorithm_info()

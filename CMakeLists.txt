@@ -117,13 +117,18 @@ endif()
 if (NOT DEFINED COLD_CACHES)
 set(COLD_CACHES "false")
 endif()
+
+if (NOT DEFINED THREADING)
+set(THREADING "full")
+endif()
+
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES}")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES} THREADING=${THREADING}")
 
 add_custom_target(
 work
 COMMAND ${CMAKE_COMMAND} -E echo N=${N} C=${C} H=${H} W=${W} 
-COMMAND ${CMAKE_COMMAND} -DPERFMON=${PERFMON} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
+COMMAND ${CMAKE_COMMAND} -DPERFMON=${PERFMON} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DTHREADING=${THREADING} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_codes.cmake | grep -e FLOPS | cut -d ":" -f 2 | tee work.txt
 WORKING_DIRECTORY ${CMAKE_CURRENT_BIN_DIR}
 DEPENDS ${PERFMON} test-openmp-gomp
 )
@@ -167,7 +172,7 @@ target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 add_custom_target(
 traffic 
 COMMENT "Measuring memory traffic of kernel (LLC to DRAM)"
-COMMAND ${CMAKE_COMMAND} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_traffic.cmake
+COMMAND ${CMAKE_COMMAND} -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -DTHREADING=${THREADING} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_traffic.cmake
 DEPENDS test-memory-traffic 
 )
 
@@ -176,34 +181,43 @@ DEPENDS test-memory-traffic
 # it does need memory throughput [GB/sec]
 # and cpu throughput [GFLOPS/sec]
 
-# If possible use numactl to enfroce allocation and execution on the same socket
-# For Xeons we run two copies of program (one per socket) in parallel to get total bandwidth 
-# This allow to get best Memory throughput on Xeon platforms
+# If numa exists we use it to enforce execution on one or two sockets
 find_program(ISNUMA NAMES numactl)
-if(ISNUMA STREQUAL "ISNUMA-NOTFOUND")
+if((THREADING STREQUAL "single") OR (ISNUMA STREQUAL "ISNUMA-NOTFOUND") )
 add_custom_target(
 memtest
-COMMENT "Performing peak memory test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
+COMMENT "Performing ${THREADING} peak memory test:"
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
 COMMAND echo "0" | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 VERBATIM
 )
-else()
+elseif(THREADING STREQUAL "socket")
 add_custom_target(
 memtest
-COMMENT "Performing peak memory test (using numactl):"
+COMMENT "Performing socket peak memory test (using numactl):"
+COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
+COMMAND echo "0" | tee memtest-2.txt
+DEPENDS test-openmp-gomp
+#VERBATIM # VERBATIM environemnt does add quotes around & character. Not sure why
+)
+else() # "full"
+# If possible use numactl to enfroce allocation and execution on the same socket
+# For Xeons we run two copies of program (one per socket) in parallel to get total bandwidth 
+# This allow to get best Memory throughput on Xeon platforms
+add_custom_target(
+memtest
+COMMENT "Performing two-sockets peak memory test (using numactl):"
 COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt & numactl -m 1 -N 1 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 #VERBATIM # VERBATIM environemnt does add quotes around & character. Not sure why
 )
 endif()
 
-
 add_custom_target(
 cputest
 COMMENT "Performing peak cpu test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest | grep -e "Benchmarked" | cut -d " " -f 4 | tee cputest.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --cputest --threading=${THREADING} | grep -e "Benchmarked" | cut -d " " -f 4 | tee cputest.txt
 DEPENDS test-openmp-gomp 
 VERBATIM
 )
@@ -226,7 +240,7 @@ COMMAND cmake -DVAL="0" -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/turbo_boost.cmake )
 add_custom_target(
 runtime
 COMMENT "Performing runtime test (Make sure TURBO BOOST is disabled!)"
-COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
+COMMAND cmake -DN=${N} -DC=${C} -DH=${H} -DW=${W} -DALGO=${ALGO} -DCOLD_CACHES=${COLD_CACHES} -DTHREADING=${THREADING} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_runtime.cmake
 DEPENDS test-openmp-gomp 
 )
 

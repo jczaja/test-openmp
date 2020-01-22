@@ -10,22 +10,22 @@ set(script "${script}\n set logscale xy")
 set(script "${script}\n set grid")
 set(script "${script}\n max(x,y) = x > y ? x : y")
 set(script "${script}\n rigidpoint = ${CPU_THROUGHPUT}/${MEMORY_THRGHPT}")    # Memory roofline
-set(script "${script}\n set xrange[0.0001:max(rigidpoint,${OI})*10.0]")
-set(script "${script}\n set yrange[0.0001:${CPU_THRGHPT}*10.0]")
+set(script "${script}\n set xrange[0.1:max(rigidpoint,${OI})*10.0]")
+set(script "${script}\n set yrange[0.1:${CPU_THRGHPT}*10.0]")
 set(script "${script}\n min(x,y) = x < y ? x : y")
 set(script "${script}\n memroof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline
 set(script "${script}\n cpuroof = ${CPU_THROUGHPUT}")          # cpu_roofline
 set(script "${script}\n roofline(x) = min(memroof(x),cpuroof)")
-set(script "${script}\n set arrow from ${OI},0.0001 to ${OI},roofline(${OI}) nohead dt 2")
+set(script "${script}\n set arrow from ${OI},0.1 to ${OI},roofline(${OI}) nohead dt 2")
 set(script "${script}\n set object 3 circle at ${OI},${RUNTIME_PERFORMANCE} size scr 0.004 fc  rgb \"black\" fs solid")
 set(script "${script}\n set label \"compute bound (${CPU_THROUGHPUT} GFLOPS)\" at rigidpoint,cpuroof * 1.2 textcolor \"black\"")
 set(script "${script}\n set angles degrees")
 set(script "${script}\n set label \"Throughput: ${RUNTIME_PERFORMANCE} GFLOPS\\nExecution time: ${EXECUTION_TIME} ms\" at scr 0.4, 0.35 textcolor \"black\"") 
-set(script "${script}\n set label \"${ALGO_INFO}\" at first 0.95*${OI}, scr 0.25 textcolor \"black\" rotate by 90") 
+set(script "${script}\n set label \"${ALGO_INFO}\" at first 0.95*${OI}, scr 0.08 textcolor \"black\" rotate by 90") 
 set(script "${script}\n set arrow from scr 0.5,0.4 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n MAXGFLOPS = sprintf(\"%f GFLOPS\", roofline(${OI}))")
 set(script "${script}\n set label MAXGFLOPS at scr 0.5, first roofline(${OI}) * 1.10")
-set(script "${script}\n set arrow from first 0.0001, first roofline(${OI}) to first ${OI}, first roofline(${OI}) nohead dt 3")
+set(script "${script}\n set arrow from first 0.1, first roofline(${OI}) to first ${OI}, first roofline(${OI}) nohead dt 3")
 set(script "${script}\n ")
 set(script "${script}\n plot roofline(x) ls LINEROOF")
 file(WRITE "${CMAKE_BINARY_DIR}/roofline.plot" "${script}")
@@ -62,10 +62,12 @@ string(REGEX REPLACE "\n$" "" EXECUTION_TIME_MS_STRIPPED "${EXECUTION_TIME_MS}")
 string(REGEX REPLACE "\n$" "" OI_STRIPPED "${OI}")
 string(REGEX REPLACE "\n$" "" RUNTIME_PERFORMANCE_STRIPPED "${RUNTIME_PERFORMANCE}")
 
+string(REGEX REPLACE "\n$" "" HW_INFO_STRIPPED "${HW_INFO}")
+
 # Combine Memory bandwidth readings from two sockets
 floatexpr("${MEMORY_THROUGHPUT_1}+${MEMORY_THROUGHPUT_2}" MEMORY_THROUGHPUT)
 
-create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${EXECUTION_TIME_MS_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO}" "${ALGO_INFO}")
+create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${EXECUTION_TIME_MS_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO_STRIPPED}" "${ALGO_INFO}")
 # Execute gnuplot using generated script
 execute_process(
     COMMAND ${GNUPLOT_EXECUTABLE} ${CMAKE_BINARY_DIR}/roofline.plot

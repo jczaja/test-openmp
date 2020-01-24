@@ -91,7 +91,7 @@ void DNNLConvBlockedKernel::ShowInfo(bool cold_caches)
 
   std::cout << std::endl << " DNNL Blocked Conv " << n << "x" << c << "x" 
          << h << "x" << w << " " << NumF << "x" << HeightF << "x" << WidthF << 
-        " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+        " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
         std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<

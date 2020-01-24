@@ -91,7 +91,7 @@ void DNNLKernel<NF, HF, WF>::ShowInfo(bool cold_caches)
 
   std::cout << std::endl << " DNNL NCHW Conv " << n << "x" << c << "x" 
          << h << "x" << w << " " << NF << "x" << HF << "x" << WF << 
-      " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+      " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
       std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
   "   channel size: "<< c << std::endl <<

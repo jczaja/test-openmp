@@ -31,7 +31,7 @@ void Kernel::Init(platform_info &pi, int n, int c, int h, int w)
 void Kernel::ShowInfo(bool cold_caches)
 {
     std::cout << std::endl << " Sum " << sized_<<"x1" <<  " (" << 
-      (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" << std::endl << std::endl;
+      (cold_caches == true ? "cold caches" : "warm caches")  << ")" << std::endl << std::endl;
 }
 
 inline void Kernel::RunSingle(void)

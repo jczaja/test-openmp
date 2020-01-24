@@ -71,7 +71,7 @@ void DNNLLayerNormKernel::ShowInfo(bool cold_caches)
   int c = dims[2];
 
   std::cout << std::endl << " DNNL TNC Layer Norm " << t << "x" << n << "x" << c << 
-  " (" << (cold_caches == true ? "cold_caches" : "warm_caches")  << ")" <<
+  " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
   std::endl << std::endl <<
   "   sequence length: "<<  t << std::endl <<
   "   batch Size: "<< n << std::endl <<

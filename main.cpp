@@ -402,6 +402,18 @@ void run_mem_test(platform_info& pi)
       return __rdtsc() - start_t;
   };
 
+
+  // Copying data as fast as possible
+  auto memory_copy = [&](char* dst, char* src , size_t total_size, int num_threads) {
+      auto size_to_copy = total_size/num_threads;
+      auto start_t = __rdtsc();
+      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+      for(int i=0; i < num_threads; ++i) { 
+          memcpy(dst + i*size_to_copy,src+i*size_to_copy,size_to_copy);
+      }
+      return __rdtsc() - start_t;
+  };
+
   std::vector<unsigned long long> mem_nontemp_jit_write_times;
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
@@ -419,6 +431,18 @@ void run_mem_test(platform_info& pi)
   auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
   
+
+  std::vector<unsigned long long> memcpy_times;
+  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 1));
+  memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), pi.num_total_phys_cores));
+
+  auto memcpy_t = *(std::min_element(memcpy_times.begin(), memcpy_times.end()));
+
+  // Data was read and then write so Q = Q_r + Q_w
+  auto throughput = 2.0f*size_of_floats*sizeof(float) / (memcpy_t / ((float)pi.tsc_ghz));
+
+  std::cout << " Memory Copy Throughput: " << throughput << " [GB/s]" << std::endl;
+
   free(src);
   free(dst);
 }

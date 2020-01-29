@@ -246,6 +246,60 @@ struct MemBench : public Xbyak::CodeGenerator {
 };
 
 
+struct MemBench2 : public Xbyak::CodeGenerator {
+    MemBench2(const int num_inner_loop_instructions, const unsigned int size_to_write)
+{
+#if defined(__x86_64__)
+// calling convention RDI, RSI, RDX, RCX, R8, R9
+// XMM0-7 (ints are passed that way)
+// RDI - PTR to target rray
+// RSI - num loops
+
+// Regsters that need to be preserved: RBX,RBP, R12-R15
+
+  Xbyak::util::Cpu current_cpu;
+  if(current_cpu.has(Xbyak::util::Cpu::tAVX512F)) {
+    printf("AVX-512 supported!\n");
+    mov (rcx, size_to_write/64/num_inner_loop_instructions);
+    mov (rsi, 64*num_inner_loop_instructions);
+    L("Loop_over");
+    for(int i=0; i<num_inner_loop_instructions; ++i) {
+      vmovupd(ptr[rdi+i*64],zmm0);
+    }
+    add(rdi,rsi);
+    dec(rcx);
+    jnz("Loop_over");
+
+  } else if (current_cpu.has(Xbyak::util::Cpu::tAVX2)) {
+    printf("AVX2 supported!\n");
+    mov (rcx, size_to_write/32/num_inner_loop_instructions);
+    mov (rsi, 32*num_inner_loop_instructions);
+    L("Loop_over");
+    for(int i=0; i<num_inner_loop_instructions; ++i) {
+      vmovupd(ptr[rdi+i*32],ymm0);
+    }
+    add(rdi,rsi);
+    dec(rcx);
+    jnz("Loop_over");
+
+  } else if (current_cpu.has(Xbyak::util::Cpu::tAVX)) {
+    printf("AVX detected!\n");
+    mov (rcx, size_to_write/16/num_inner_loop_instructions);
+    mov (rsi, 16*num_inner_loop_instructions);
+    L("Loop_over");
+    for(int i=0; i<num_inner_loop_instructions; ++i) {
+      vmovupd(ptr[rdi+i*16],xmm0);
+    }
+    add(rdi,rsi);
+    dec(rcx);
+    jnz("Loop_over");
+  }
+#else
+        printf("32bit not supported\n");
+#endif
+  ret();
+}
+};
 
 void seq_max(float& result, const float* X, int num_classes)
 {
@@ -340,8 +394,8 @@ void run_mem_test(platform_info& pi)
 {
     std::cout << "Threads : " << pi.num_total_phys_cores << std::endl;
 
-  // Get 512 MB for source and copy it to 512 MB dst. 
-  // Intention is to copy more memory than it can be fead into cache 
+  // Get 512 MB for source and copy it to 512 MB dst.
+  // Intention is to copy more memory than it can be fed into cache
   size_t size_of_floats = 128*1024*1024;
   float *src,*dst;
   int ret = posix_memalign((void**)&src,64,size_of_floats*sizeof(float));
@@ -360,6 +414,35 @@ void run_mem_test(platform_info& pi)
     src[i] = i;
     dst[i] = 0.0f;
   } 
+
+  auto memory_jit_write = [&](char* dst, size_t total_size, int num_threads)
+  {
+    const int inner_seq_length = 16;
+    unsigned int num_reps = 20;
+    size_t single_chunk_size = total_size/num_threads;
+    // Get kernel doing non-temporaral writes for single thread
+    MemBench2 benchmark(inner_seq_length, single_chunk_size);
+    void (*bench_code)(char*) = (void (*)(char* dst))benchmark.getCode();
+
+    unsigned long long deltas = 0;
+    for (unsigned int i =0; i< num_reps; ++i) {
+      auto start_t = __rdtsc();
+      #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
+      for (size_t i = 0; i < total_size / single_chunk_size; i++) {
+#       ifdef GENERATE_ASSEMBLY
+        asm volatile ("BEGIN WRITE JIT <---");
+#       endif
+        bench_code(dst+i*single_chunk_size);
+#       ifdef GENERATE_ASSEMBLY
+        asm volatile ("END WRITE JIT <---");
+#       endif
+      }
+      deltas += __rdtsc() - start_t;
+    }
+    auto timed = deltas/num_reps;
+    std::cout << "Measured temp write JIT memtest Threads: " << num_threads << " time: " << timed << std::endl;
+    return timed;
+  };
 
   auto memory_nontemp_jit_write = [&](char* dst, size_t total_size, int num_threads)
   {
@@ -386,7 +469,7 @@ void run_mem_test(platform_info& pi)
       deltas += __rdtsc() - start_t;
     }
     auto timed = deltas/num_reps;
-    std::cout << "Measured JIT memtest Threads: " << num_threads << " time: " << timed << std::endl;
+    std::cout << "Measured non-temp write JIT Threads: " << num_threads << " time: " << timed << std::endl;
     return timed;
   };
 
@@ -422,7 +505,17 @@ void run_mem_test(platform_info& pi)
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 16 ? 16 : 1));
   auto mem_nontemp_jit_write_t = *(std::min_element(mem_nontemp_jit_write_times.begin(), mem_nontemp_jit_write_times.end()));
   auto nontemp_jit_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_jit_write_t / ((float)pi.tsc_ghz));
-  std::cout << " Memory Non-Temporal JIT Write Throughput: " << nontemp_jit_write_throughput << " [GB/s]" << std::endl;
+  std::cout << " Memory Non-Temporal Write JIT Write Throughput: " << nontemp_jit_write_throughput << " [GB/s]" << std::endl;
+
+  std::vector<unsigned long long> mem_jit_write_times;
+  mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
+  mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
+  mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 4 ? 4 : 1));
+  mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 8 ? 8 : 1));
+  mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 16 ? 16 : 1));
+  auto mem_jit_write_t = *(std::min_element(mem_jit_write_times.begin(), mem_jit_write_times.end()));
+  auto jit_write_throughput = size_of_floats*sizeof(float) / (mem_jit_write_t / ((float)pi.tsc_ghz));
+  std::cout << " Memory Write JIT Write Throughput: " << jit_write_throughput << " [GB/s]" << std::endl;
 
   std::vector<unsigned long long> mem_write_times;
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 1));
@@ -430,7 +523,6 @@ void run_mem_test(platform_info& pi)
   auto mem_write_t = *(std::min_element(mem_write_times.begin(), mem_write_times.end()));
   auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)pi.tsc_ghz));
   std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
-  
 
   std::vector<unsigned long long> memcpy_times;
   memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 1));

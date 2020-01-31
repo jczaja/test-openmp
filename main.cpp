@@ -424,7 +424,7 @@ void run_mem_test(platform_info& pi)
     MemBench2 benchmark(inner_seq_length, single_chunk_size);
     void (*bench_code)(char*) = (void (*)(char* dst))benchmark.getCode();
 
-    unsigned long long deltas = 0;
+    unsigned long long minimal_delta = (unsigned long long)-1;
     for (unsigned int i =0; i< num_reps; ++i) {
       auto start_t = __rdtsc();
       #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
@@ -437,11 +437,11 @@ void run_mem_test(platform_info& pi)
         asm volatile ("END WRITE JIT <---");
 #       endif
       }
-      deltas += __rdtsc() - start_t;
+      auto delta = __rdtsc() - start_t;
+      minimal_delta = delta < minimal_delta ? delta : minimal_delta; 
     }
-    auto timed = deltas/num_reps;
-    std::cout << "Measured temp write JIT memtest Threads: " << num_threads << " time: " << timed << std::endl;
-    return timed;
+    std::cout << "Measured JIT Write Threads: " << num_threads << " time: " << minimal_delta << std::endl;
+    return minimal_delta;
   };
 
   auto memory_nontemp_jit_write = [&](char* dst, size_t total_size, int num_threads)
@@ -453,7 +453,7 @@ void run_mem_test(platform_info& pi)
     MemBench benchmark(inner_seq_length, single_chunk_size);
     void (*bench_code)(char*) = (void (*)(char* dst))benchmark.getCode();
 
-    unsigned long long deltas = 0;
+    unsigned long long minimal_delta = (unsigned long long)-1;
     for (unsigned int i =0; i< num_reps; ++i) {
       auto start_t = __rdtsc();
       #pragma omp parallel for num_threads(num_threads) if (num_threads > 1)
@@ -466,11 +466,11 @@ void run_mem_test(platform_info& pi)
         asm volatile ("END NON-TEMP JIT <---");
 #       endif
       }
-      deltas += __rdtsc() - start_t;
+      auto delta = __rdtsc() - start_t;
+      minimal_delta = delta < minimal_delta ? delta : minimal_delta; 
     }
-    auto timed = deltas/num_reps;
-    std::cout << "Measured non-temp write JIT Threads: " << num_threads << " time: " << timed << std::endl;
-    return timed;
+    std::cout << "Measured JIT non-Temporal write Threads: " << num_threads << " time: " << minimal_delta << std::endl;
+    return minimal_delta;
   };
 
 
@@ -497,6 +497,7 @@ void run_mem_test(platform_info& pi)
       return __rdtsc() - start_t;
   };
 
+  std::vector<float> throughputs;
   std::vector<unsigned long long> mem_nontemp_jit_write_times;
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 2 ? 2 : 1));
@@ -505,7 +506,8 @@ void run_mem_test(platform_info& pi)
   mem_nontemp_jit_write_times.emplace_back( memory_nontemp_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 16 ? 16 : 1));
   auto mem_nontemp_jit_write_t = *(std::min_element(mem_nontemp_jit_write_times.begin(), mem_nontemp_jit_write_times.end()));
   auto nontemp_jit_write_throughput = size_of_floats*sizeof(float) / (mem_nontemp_jit_write_t / ((float)pi.tsc_ghz));
-  std::cout << " Memory Non-Temporal Write JIT Write Throughput: " << nontemp_jit_write_throughput << " [GB/s]" << std::endl;
+  std::cout << " Non-Temporal Write JIT Write Throughput: " << nontemp_jit_write_throughput << " [GB/s]" << std::endl;
+  throughputs.push_back(nontemp_jit_write_throughput);
 
   std::vector<unsigned long long> mem_jit_write_times;
   mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), 1));
@@ -515,25 +517,26 @@ void run_mem_test(platform_info& pi)
   mem_jit_write_times.emplace_back( memory_jit_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores > 16 ? 16 : 1));
   auto mem_jit_write_t = *(std::min_element(mem_jit_write_times.begin(), mem_jit_write_times.end()));
   auto jit_write_throughput = size_of_floats*sizeof(float) / (mem_jit_write_t / ((float)pi.tsc_ghz));
-  std::cout << " Memory Write JIT Write Throughput: " << jit_write_throughput << " [GB/s]" << std::endl;
+  std::cout << " Write JIT Write Throughput: " << jit_write_throughput << " [GB/s]" << std::endl;
+  throughputs.push_back(jit_write_throughput);
 
   std::vector<unsigned long long> mem_write_times;
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), 1));
   mem_write_times.emplace_back( memory_write((char*)dst, size_of_floats*sizeof(float), pi.num_total_phys_cores));
   auto mem_write_t = *(std::min_element(mem_write_times.begin(), mem_write_times.end()));
   auto write_throughput = size_of_floats*sizeof(float) / (mem_write_t / ((float)pi.tsc_ghz));
-  std::cout << " Memory Write Throughput: " << write_throughput << " [GB/s]" << std::endl;
-
+  std::cout << " Write : " << write_throughput << " [GB/s]" << std::endl;
+  throughputs.push_back(write_throughput);
+  
   std::vector<unsigned long long> memcpy_times;
   memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), 1));
   memcpy_times.emplace_back( memory_copy((char*)dst, (char*)src, size_of_floats*sizeof(float), pi.num_total_phys_cores));
-
   auto memcpy_t = *(std::min_element(memcpy_times.begin(), memcpy_times.end()));
-
   // Data was read and then write so Q = Q_r + Q_w
   auto throughput = 2.0f*size_of_floats*sizeof(float) / (memcpy_t / ((float)pi.tsc_ghz));
-
-  std::cout << " Memory Copy Throughput: " << throughput << " [GB/s]" << std::endl;
+  std::cout << " Copy : " << throughput << " [GB/s]" << std::endl;
+  throughputs.push_back(throughput);
+  std::cout << "Memory Throughput: " <<  *(std::max_element(throughputs.begin(), throughputs.end())) << " [GB/s]" << std::endl;
 
   free(src);
   free(dst);

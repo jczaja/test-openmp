@@ -187,7 +187,7 @@ if((THREADING STREQUAL "single") OR (ISNUMA STREQUAL "ISNUMA-NOTFOUND") )
 add_custom_target(
 memtest
 COMMENT "Performing ${THREADING} peak memory test:"
-COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
+COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Memory Throughput" | cut -d ":" -f 2 |  cut -d "[" -f 1 | tee memtest-1.txt
 COMMAND echo "0" | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 VERBATIM
@@ -196,7 +196,7 @@ elseif(THREADING STREQUAL "socket")
 add_custom_target(
 memtest
 COMMENT "Performing socket peak memory test (using numactl):"
-COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt
+COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest --threading=${THREADING} | grep -ie "Memory Throughput" | cut -d ":" -f 2 |  cut -d "[" -f 1 | tee memtest-1.txt
 COMMAND echo "0" | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 #VERBATIM # VERBATIM environemnt does add quotes around & character. Not sure why
@@ -208,7 +208,7 @@ else() # "full"
 add_custom_target(
 memtest
 COMMENT "Performing two-sockets peak memory test (using numactl):"
-COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-1.txt & numactl -m 1 -N 1 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Tempo" | cut -d " " -f 7 | tee memtest-2.txt
+COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Memory Throughput" | cut -d ":" -f 2 | cut -d "[" -f 1 | tee memtest-1.txt & numactl -m 1 -N 1 ${CMAKE_BINARY_DIR}/test-openmp-gomp --memtest | grep -ie "Memory Throughput" | cut -d ":" -f 2 | cut -d "[" -f 1 | tee memtest-2.txt
 DEPENDS test-openmp-gomp
 #VERBATIM # VERBATIM environemnt does add quotes around & character. Not sure why
 )

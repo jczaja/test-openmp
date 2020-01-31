@@ -5,10 +5,19 @@ endfunction()
 
 
 function(execute_runtime num_reps total_time_c total_time_s)
-execute_process(COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} --cold_caches=${COLD_CACHES} --threading=${THREADING} 
+find_program(ISNUMA NAMES numactl)
+if((THREADING STREQUAL "single") OR (THREADING STREQUAL "full") OR (ISNUMA STREQUAL "ISNUMA-NOTFOUND") )
+execute_process(COMMAND ${CMAKE_BINARY_DIR}/test-openmp-gomp --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} --cold_caches=${COLD_CACHES} --threading=${THREADING}
 COMMAND grep -e "Runtime"
 COMMAND cut -d " " -f 2,4
 OUTPUT_VARIABLE __times)
+else()
+execute_process(COMMAND numactl -m 0 -N 0 ${CMAKE_BINARY_DIR}/test-openmp-gomp --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --channel_size=${C} --height=${H} --width=${W} --cold_caches=${COLD_CACHES} --threading=${THREADING}
+COMMAND grep -e "Runtime"
+COMMAND cut -d " " -f 2,4
+OUTPUT_VARIABLE __times)
+endif()
+
 separate_arguments(__times)
 list(GET __times 0 times_c)
 list(GET __times 1 times_s)

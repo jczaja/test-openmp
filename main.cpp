@@ -568,7 +568,7 @@ int main(int argc, char** argv)
     // Reduce default number of openmp threads used for computation
     std::cout << "NUM_TOTAL_PHYS_CORES: " << pi.num_total_phys_cores << std::endl;
 
-    std::cout << "  Execution threads: " <<  execution_threads[FLAGS_threading] << std::endl;
+    std::cout << "  Threads: " <<  execution_threads[FLAGS_threading] << std::endl;
 
 
     // CPU thoughput test

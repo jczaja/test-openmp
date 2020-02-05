@@ -151,6 +151,7 @@ add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CUR
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
@@ -161,6 +162,7 @@ add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")

@@ -12,7 +12,7 @@ class DNNLEltwiseKernel : public BaseKernel {
 
  public:
   // Registration of kernel
-  DNNLEltwiseKernel();
+  DNNLEltwiseKernel(bool register_kernel = true);
 
   // Initialization
   // Params: dimensions

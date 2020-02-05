@@ -8,15 +8,17 @@ REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_swish COMMA 0
 REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_gelu COMMA 0 COMMA 0>, gelu);
 
 template<dnnl::algorithm algo, int alpha, int beta>
-DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel()
+DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel(bool register_kernel)
 {
   mappings_.clear();
   mappings_[dnnl::algorithm::eltwise_relu] = "dnnl_nchw_relu";
   mappings_[dnnl::algorithm::eltwise_swish] = "dnnl_nchw_swish";
   mappings_[dnnl::algorithm::eltwise_gelu] = "dnnl_nchw_gelu";
 
-  // Register kernel
-  kernels[mappings_[algo]] = this;
+  // registering kernel should no happen
+  // when derived class is calling this constructor
+  if (register_kernel == true)
+    kernels[mappings_[algo]] = this;
 }
 
 template<dnnl::algorithm algo, int alpha, int beta>

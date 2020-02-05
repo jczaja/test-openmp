@@ -4,13 +4,19 @@
 #include<kernels/dnnl_fp32_eltwise_kernel.hpp>
 
 REGISTER_KERNEL(DNNLEltwiseKernel<dnnl::algorithm::eltwise_relu COMMA 0 COMMA 0>);
-//REGISTER_KERNEL(DNNLEltwiseKernel<dnnl::algorithm::eltwise_swish COMMA 0 COMMA 0>); // Swish Alpha to be adjusted
+REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_swish COMMA 0 COMMA 0>, swish);
+REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_gelu COMMA 0 COMMA 0>, gelu);
 
 template<dnnl::algorithm algo, int alpha, int beta>
 DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel()
 {
+  std::unordered_map<dnnl::algorithm, std::string> mappings;
+  mappings[dnnl::algorithm::eltwise_relu] = "dnnl_nchw_relu";
+  mappings[dnnl::algorithm::eltwise_swish] = "dnnl_nchw_swish";
+  mappings[dnnl::algorithm::eltwise_gelu] = "dnnl_nchw_gelu";
+
   // Register kernel
-  kernels[std::string("dnnl_nchw_eltwise")] = this;
+  kernels[mappings[algo]] = this;
 }
 
 template<dnnl::algorithm algo, int alpha, int beta>

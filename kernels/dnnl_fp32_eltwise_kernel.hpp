@@ -27,6 +27,9 @@ class DNNLEltwiseKernel : public BaseKernel {
   void RunSingle(void);
    void InitializeData(float* ptr, unsigned int sized);
 
+ protected:
+  std::unordered_map<dnnl::algorithm, std::string> mappings_;
+
  private:
    dnnl::engine eng_;
    dnnl::stream s_;

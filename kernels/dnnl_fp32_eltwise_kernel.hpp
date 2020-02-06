@@ -1,5 +1,5 @@
-#ifndef _DNNL_FP32_RELU_KERNEL
-#define _DNNL_FP32_RELU_KERNEL
+#ifndef _DNNL_FP32_ELTWISE_KERNEL
+#define _DNNL_FP32_ELTWISE_KERNEL
 
 #include <string>
 #include <memory>

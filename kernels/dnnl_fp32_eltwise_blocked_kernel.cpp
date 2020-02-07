@@ -11,9 +11,9 @@ template<dnnl::algorithm algo>
 DNNLEltwiseBlockedKernel<algo>::DNNLEltwiseBlockedKernel() : DNNLEltwiseKernel<algo,0,0>(false)
 {
   this->mappings_.clear();
-  this->mappings_[dnnl::algorithm::eltwise_relu] = "dnnl_blocked_relu";
-  this->mappings_[dnnl::algorithm::eltwise_swish] = "dnnl_blocked_swish";
-  this->mappings_[dnnl::algorithm::eltwise_gelu] = "dnnl_blocked_gelu";
+  this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_relu)] = "dnnl_blocked_relu";
+  this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_swish)] = "dnnl_blocked_swish";
+  this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_gelu)] = "dnnl_blocked_gelu";
 }
 
 template<dnnl::algorithm algo>
@@ -67,7 +67,7 @@ void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
   int h = dims[2];
   int w = dims[3];
 
-  std::cout << std::endl << " DNNL Blocked "<< this->mappings_[algo] << " " << n << "x" << c << "x" 
+  std::cout << std::endl << " DNNL Blocked "<< this->mappings_[static_cast<int>(algo)] << " " << n << "x" << c << "x" 
          << h << "x" << w << " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
         std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<
@@ -81,11 +81,11 @@ template<dnnl::algorithm algo>
 DNNLEltwiseBlockedKernel<algo>::~DNNLEltwiseBlockedKernel()
 {
   if (this->src_ ) {
-   std::cout << "DNNL " << this->mappings_[algo] << 
+   std::cout << "DNNL " << this->mappings_[static_cast<int>(algo)] << 
        " SRC First element: " << static_cast<float*>(this->src_->get_data_handle())[0] << std::endl;
   }
   if (this->dst_ ) {
-   std::cout << "DNNL " << this->mappings_[algo] << 
+   std::cout << "DNNL " << this->mappings_[static_cast<int>(algo)] << 
        " DST First element: " << static_cast<float*>(this->dst_->get_data_handle())[0] << std::endl;
   }
 

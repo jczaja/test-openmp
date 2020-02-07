@@ -11,14 +11,14 @@ template<dnnl::algorithm algo, int alpha, int beta>
 DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel(bool register_kernel)
 {
   mappings_.clear();
-  mappings_[dnnl::algorithm::eltwise_relu] = "dnnl_nchw_relu";
-  mappings_[dnnl::algorithm::eltwise_swish] = "dnnl_nchw_swish";
-  mappings_[dnnl::algorithm::eltwise_gelu] = "dnnl_nchw_gelu";
+  mappings_[static_cast<int>(dnnl::algorithm::eltwise_relu)] = "dnnl_nchw_relu";
+  mappings_[static_cast<int>(dnnl::algorithm::eltwise_swish)] = "dnnl_nchw_swish";
+  mappings_[static_cast<int>(dnnl::algorithm::eltwise_gelu)] = "dnnl_nchw_gelu";
 
   // registering kernel should no happen
   // when derived class is calling this constructor
   if (register_kernel == true)
-    kernels[mappings_[algo]] = this;
+    kernels[mappings_[static_cast<int>(algo)]] = this;
 }
 
 template<dnnl::algorithm algo, int alpha, int beta>

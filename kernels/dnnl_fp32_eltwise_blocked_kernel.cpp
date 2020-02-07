@@ -61,7 +61,7 @@ template<dnnl::algorithm algo>
 void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
 {
   auto src_md = this->src_->get_desc();
-  auto dims = this->src_md.data.dims;
+  auto dims = src_md.data.dims;
   int n = dims[0];
   int c = dims[1];
   int h = dims[2];
@@ -76,5 +76,19 @@ void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
   "   width: "<< w << std::endl;
 }
 
+
+template<dnnl::algorithm algo>
+DNNLEltwiseBlockedKernel<algo>::~DNNLEltwiseBlockedKernel()
+{
+  if (this->src_ ) {
+   std::cout << "DNNL " << this->mappings_[algo] << 
+       " SRC First element: " << static_cast<float*>(this->src_->get_data_handle())[0] << std::endl;
+  }
+  if (this->dst_ ) {
+   std::cout << "DNNL " << this->mappings_[algo] << 
+       " DST First element: " << static_cast<float*>(this->dst_->get_data_handle())[0] << std::endl;
+  }
+
+}
 
 

@@ -14,6 +14,8 @@ class DNNLEltwiseBlockedKernel : public DNNLEltwiseKernel<algo, 0,0>
 
     virtual void ShowInfo(bool cold_caches);
 
+    ~DNNLEltwiseBlockedKernel();
+
   private:
    void InitializeData(float* ptr, unsigned int sized);
 };

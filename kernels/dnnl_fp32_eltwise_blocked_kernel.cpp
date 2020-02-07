@@ -14,6 +14,9 @@ DNNLEltwiseBlockedKernel<algo>::DNNLEltwiseBlockedKernel() : DNNLEltwiseKernel<a
   this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_relu)] = "dnnl_blocked_relu";
   this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_swish)] = "dnnl_blocked_swish";
   this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_gelu)] = "dnnl_blocked_gelu";
+
+  // Register kernel
+  kernels[this->mappings_[static_cast<int>(algo)]] = this;
 }
 
 template<dnnl::algorithm algo>

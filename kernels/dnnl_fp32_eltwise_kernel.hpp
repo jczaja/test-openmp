@@ -30,7 +30,7 @@ class DNNLEltwiseKernel : public BaseKernel {
  protected:
   std::unordered_map<dnnl::algorithm, std::string> mappings_;
 
- private:
+ protected:
    dnnl::engine eng_;
    dnnl::stream s_;
    std::unique_ptr<dnnl::memory> src_;

@@ -47,7 +47,7 @@ void GenerateHelpString(std::string& mystr)
    }
 }
 
-std::string mystr(200,' ');
+std::string mystr(500,' '); // Icrease if needed
 
 DEFINE_string(algo, "sum", mystr.c_str());
 DEFINE_string(threading, "full", "Threading model of execution: single-threaded, single-socket, full capabilities (two sockets if available)");

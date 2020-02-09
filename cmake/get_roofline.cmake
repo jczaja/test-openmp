@@ -24,7 +24,7 @@ set(script "${script}\n set label \"Throughput: ${RUNTIME_PERFORMANCE} GFLOPS\\n
 set(script "${script}\n set label \"${ALGO_INFO}\" at first 0.95*${OI}, scr 0.08 textcolor \"black\" rotate by 90") 
 set(script "${script}\n set arrow from scr 0.5,0.4 to ${OI},${RUNTIME_PERFORMANCE} lw 0.6")
 set(script "${script}\n MAXGFLOPS = sprintf(\"%f GFLOPS\", roofline(${OI}))")
-set(script "${script}\n set label MAXGFLOPS at scr 0.5, first roofline(${OI}) * 1.10")
+set(script "${script}\n set label MAXGFLOPS at scr 0.1, first roofline(${OI}) * 1.10")
 set(script "${script}\n set arrow from first 0.1, first roofline(${OI}) to first ${OI}, first roofline(${OI}) nohead dt 3")
 set(script "${script}\n ")
 set(script "${script}\n plot roofline(x) ls LINEROOF")

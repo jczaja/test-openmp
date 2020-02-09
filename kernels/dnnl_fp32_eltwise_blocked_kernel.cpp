@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_map>
+#include <algorithm>
 #include <x86intrin.h>
 #include<kernels/dnnl_fp32_eltwise_blocked_kernel.hpp>
 
@@ -72,7 +73,10 @@ void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
   int h = dims[2];
   int w = dims[3];
 
-  std::cout << std::endl << " DNNL Blocked "<< this->mappings_[static_cast<int>(algo)] << " " << n << "x" << c << "x" 
+  auto algorithm_info = this->mappings_[static_cast<int>(algo)];
+  std::replace(algorithm_info.begin(), algorithm_info.end(), '_', ' ');
+
+  std::cout << std::endl << " DNNL Blocked "<< algorithm_info << " " << n << "x" << c << "x" 
          << h << "x" << w << " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
         std::endl << std::endl <<
   "   batch Size: "<< n << std::endl <<

@@ -22,7 +22,9 @@ void DNNLConvBlockedKernel::Init(platform_info &pi, int n, int c, int h, int w)
 
   // Input desc
   dnnl::memory::dims src_tz = {n, c, h, w};
-  auto src_md = dnnl::memory::desc(src_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::any);
+  auto src_md = dnnl::memory::desc(src_tz, dnnl::memory::data_type::f32,
+       pi.fmaspc == 32 ? dnnl::memory::format_tag::aBcd16b : 
+       pi.fmaspc == 16 ? dnnl::memory::format_tag::aBcd8b :  dnnl::memory::format_tag::aBcd4b);
 
   auto num_filters = NumF;
   dnnl::memory::dims weights_tz = {num_filters, c, HeightF, WidthF};

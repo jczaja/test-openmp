@@ -122,8 +122,12 @@ if (NOT DEFINED THREADING)
 set(THREADING "full")
 endif()
 
+if (NOT DEFINED CHARTS)
+set(CHARTS "absolute")
+endif()
+
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES} THREADING=${THREADING}")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES} THREADING=${THREADING} CHARTS=${CHARTS}")
 
 add_custom_target(
 work
@@ -248,7 +252,7 @@ DEPENDS test-openmp-gomp
 
 add_custom_target(
 roofline
-COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
+COMMAND cmake -DCHARTS=${CHARTS} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/get_roofline.cmake
 DEPENDS memtest cputest traffic work runtime
 )
 

@@ -35,7 +35,21 @@ function eltwise_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=8 -DW=227 -DH=227 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  sudo make enable_turbo_boost
+  make -j 4 test-openmp-gomp
+  sudo make disable_turbo_boost
+  make roofline
+  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $1
+  popd
+}
+
+function pool_experiment()
+{
+  mkdir -p $1
+  mkdir $2
+  pushd $2
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -61,6 +75,10 @@ else
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_cold_caches build-eltwise-nchw-cold-caches dnnl_nchw_gelu true full
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_warm_caches build-eltwise-blocked-warm-caches dnnl_blocked_gelu false full
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_cold_caches build-eltwise-blocked-cold-caches dnnl_blocked_gelu true full
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches build-pool-nchw-warm-caches dnnl_nchw_pool_avg false full
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches build-pool-nchw-cold-caches dnnl_nchw_pool_avg true full
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches build-pool-blocked-warm-caches dnnl_blocked_pool_avg false full
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches build-pool-blocked-cold-caches dnnl_blocked_pool_avg true full
 
   # ONE SOCKET
   conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches-socket build-conv-nchw-warm-caches-socket dnnl_nchw_conv false socket
@@ -73,6 +91,10 @@ else
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_cold_caches-socket build-eltwise-nchw-cold-caches-socket dnnl_nchw_gelu true socket
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_warm_caches-socket build-eltwise-blocked-warm-caches-socket dnnl_blocked_gelu false socket
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_cold_caches-socket build-eltwise-blocked-cold-caches-socket dnnl_blocked_gelu true socket
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches-socket build-pool-nchw-warm-caches-socket dnnl_nchw_pool_avg false socket
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches-socket build-pool-nchw-cold-caches-socket dnnl_nchw_pool_avg true socket
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches-socket build-pool-blocked-warm-caches-socket dnnl_blocked_pool_avg false socket
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches-socket build-pool-blocked-cold-caches-socket dnnl_blocked_pool_avg true socket
 
   # SINGLE THREAD
   conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches-single build-conv-nchw-warm-caches-single dnnl_nchw_conv false single
@@ -85,4 +107,8 @@ else
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_cold_caches-single build-eltwise-nchw-cold-caches-single dnnl_nchw_gelu true single
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_warm_caches-single build-eltwise-blocked-warm-caches-single dnnl_blocked_gelu false single
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_cold_caches-single build-eltwise-blocked-cold-caches-single dnnl_blocked_gelu true single
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches-single build-pool-nchw-warm-caches-single dnnl_nchw_pool_avg false single
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches-single build-pool-nchw-cold-caches-single dnnl_nchw_pool_avg true single
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches-single build-pool-blocked-warm-caches-single dnnl_blocked_pool_avg false single
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches-single build-pool-blocked-cold-caches-single dnnl_blocked_pool_avg true single
 fi

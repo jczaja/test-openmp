@@ -1,5 +1,5 @@
-#ifndef _DNNL_FP32_KERNEL
-#define _DNNL_FP32_KERNEL
+#ifndef _DNNL_FP32_POOL_KERNEL
+#define _DNNL_FP32_POOL_KERNEL
 
 #include <string>
 #include <memory>

@@ -157,6 +157,7 @@ add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CUR
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
@@ -168,6 +169,7 @@ add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
@@ -269,3 +271,4 @@ add_test( alexnet_c1b ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100
 add_test( alexnet_r1 ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 96 --height=55 --width=55 --algo=dnnl_nchw_relu --num_reps 2)
 add_test( bert_ln ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 768 --height=32 --width=4 --algo=dnnl_tnc_layer_norm --num_reps 2)
 add_test( bert_ln_cold ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --batch_size 100 --channel_size 768 --height=32 --width=4 --algo=dnnl_tnc_layer_norm --cold_caches=true --num_reps 2)
+add_test( pool_avg_nchw ${CMAKE_CURRENT_BIN_DIR}/test-openmp-gomp --algo=dnnl_nchw_pool_avg --batch_size 100 --channel_size=100 --width=227 --height=227 --width=4 --num_reps 2)

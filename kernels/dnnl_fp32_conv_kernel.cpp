@@ -129,11 +129,5 @@ DNNLKernel<NF, HF, WF>::~DNNLKernel()
 template<unsigned int NF, unsigned int HF, unsigned int WF>
 inline void DNNLKernel<NF, HF, WF>::RunSingle(void)
 {
-# ifdef GENERATE_ASSEMBLY
-    asm volatile ("BEGIN dnnl conv NCHW Kernel");
-# endif
   conv_->execute(s_,conv_args_);
-# ifdef GENERATE_ASSEMBLY
-    asm volatile ("END dnnl Kernel");
-# endif
 }

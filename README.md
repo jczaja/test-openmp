@@ -41,17 +41,6 @@ Cold measurement and warm measurement
 benchmarking (two not dependant FMA faster tan one). why?
 no chain dependency.
 
-It seems throughput of FMA is 0.5
-
-Memory object where allocated on heap to foul memory prefetchet
-
-
-Memory throughput test is done without fixing CPU clocks
-
-
-One thread cannot fully use memory throughput
-
-
 When GOMP_CPU_AFFINITY set then then all in one thread then memory throughput is very 
 low as multithreading has to work on one core
 
@@ -136,12 +125,6 @@ big numbers much higher than capacity of bandwith.
 Most promising is perf stat -e data_reads <program>
 It is system wide measure and require root priviligies to be made
 
-
-Patch to have PMU available:
-https://lwn.net/Articles/585372/
-
-Experiments with Relu showed that PMU of core are not good as relu is implemented as max(x,0) implemented
-via vcomp are not counted in PMU events. Hence work is undercomputed
 
 
 Layer norm for inference is memory bound as we read input, mean and variance and do not perform much

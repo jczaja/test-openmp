@@ -27,7 +27,7 @@ set(script "${script}\n set arrow from scr 0.5,0.4 to ${OI},${RUNTIME_PERFORMANC
 set(script "${script}\n MAXGFLOPS = sprintf(\"%f GFLOPS\", roofline(${OI}))")
 else()
 set(script "${script}\n set label \"compute bound (Peak Runtime Compute: 100\\%)\" at rigidpoint,cpuroof * 1.2 textcolor \"black\"")
-set(script "${script}\n RC = sprintf(\"RC: %.2f\\%\", (${RUNTIME_PERFORMANCE}/cpuroof*100))")
+set(script "${script}\n RC = sprintf(\"RC: \\%.2f\\%\", (${RUNTIME_PERFORMANCE}/cpuroof*100))")
 set(script "${script}\n set label RC at first 0.52*${OI}, 0.9*${RUNTIME_PERFORMANCE} textcolor \"black\"")
 set(script "${script}\n MAXGFLOPS = sprintf(\"Attainable RC: \\%.2f \\%\", roofline(${OI})/cpuroof*100)")
 endif()

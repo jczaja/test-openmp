@@ -4,12 +4,12 @@
 #include <x86intrin.h>
 #include<kernels/dnnl_fp32_eltwise_blocked_kernel.hpp>
 
-REGISTER_KERNEL(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_relu>);
-REGISTER_KERNEL_VARIANT(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_swish>, swish);
-REGISTER_KERNEL_VARIANT(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_gelu>, gelu);
+REGISTER_KERNEL(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_relu COMMA 0 COMMA 0>);
+REGISTER_KERNEL_VARIANT(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_swish COMMA 0 COMMA 0>, swish);
+REGISTER_KERNEL_VARIANT(DNNLEltwiseBlockedKernel<dnnl::algorithm::eltwise_gelu COMMA 0 COMMA 0>, gelu);
 
-template<dnnl::algorithm algo>
-DNNLEltwiseBlockedKernel<algo>::DNNLEltwiseBlockedKernel() : DNNLEltwiseKernel<algo,0,0>(false)
+template<dnnl::algorithm algo, int alpha, int beta>
+DNNLEltwiseBlockedKernel<algo, alpha, beta>::DNNLEltwiseBlockedKernel() : DNNLEltwiseKernel<algo, alpha, beta>(false)
 {
   this->mappings_.clear();
   this->mappings_[static_cast<int>(dnnl::algorithm::eltwise_relu)] = "dnnl_blocked_relu";
@@ -20,8 +20,8 @@ DNNLEltwiseBlockedKernel<algo>::DNNLEltwiseBlockedKernel() : DNNLEltwiseKernel<a
   kernels[this->mappings_[static_cast<int>(algo)]] = this;
 }
 
-template<dnnl::algorithm algo>
-void DNNLEltwiseBlockedKernel<algo>::Init(platform_info &pi, int n, int c, int h, int w)
+template<dnnl::algorithm algo, int alpha, int beta>
+void DNNLEltwiseBlockedKernel<algo , alpha, beta>::Init(platform_info &pi, int n, int c, int h, int w)
 {
   this->tsc_ghz_ = pi.tsc_ghz;
 
@@ -37,7 +37,7 @@ void DNNLEltwiseBlockedKernel<algo>::Init(platform_info &pi, int n, int c, int h
 
   // Create computational primitive
   auto eltwise_desc = dnnl::eltwise_forward::desc(dnnl::prop_kind::forward_inference,
-           algo, src_md, 0, 0); // TODO(jczaja): alpha Beta support
+           algo, src_md, alpha, beta); // TODO(jczaja): alpha Beta support
   auto eltwise_pd = dnnl::eltwise_forward::primitive_desc(eltwise_desc, this->eng_);
 
   // Allocate input
@@ -54,8 +54,8 @@ void DNNLEltwiseBlockedKernel<algo>::Init(platform_info &pi, int n, int c, int h
   this->eltwise_args_[DNNL_ARG_DST] = *this->dst_;  
 }
 
-template<dnnl::algorithm algo>
-void DNNLEltwiseBlockedKernel<algo>::InitializeData(float* ptr, unsigned int sized)
+template<dnnl::algorithm algo, int alpha, int beta>
+void DNNLEltwiseBlockedKernel<algo , alpha, beta>::InitializeData(float* ptr, unsigned int sized)
 {
   // Init with some random data
   for(unsigned int i=0; i< sized; ++i) {
@@ -63,8 +63,8 @@ void DNNLEltwiseBlockedKernel<algo>::InitializeData(float* ptr, unsigned int siz
   }
 }
 
-template<dnnl::algorithm algo>
-void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
+template<dnnl::algorithm algo, int alpha, int beta>
+void DNNLEltwiseBlockedKernel<algo , alpha, beta>::ShowInfo(bool cold_caches)
 {
   auto src_md = this->src_->get_desc();
   auto dims = src_md.data.dims;
@@ -86,8 +86,8 @@ void DNNLEltwiseBlockedKernel<algo>::ShowInfo(bool cold_caches)
 }
 
 
-template<dnnl::algorithm algo>
-DNNLEltwiseBlockedKernel<algo>::~DNNLEltwiseBlockedKernel()
+template<dnnl::algorithm algo, int alpha, int beta>
+DNNLEltwiseBlockedKernel<algo , alpha, beta>::~DNNLEltwiseBlockedKernel()
 {
   if (this->src_ ) {
    std::cout << "DNNL " << this->mappings_[static_cast<int>(algo)] << 

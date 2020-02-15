@@ -9,20 +9,6 @@ REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_swish COMMA 0
 REGISTER_KERNEL_VARIANT(DNNLEltwiseKernel<dnnl::algorithm::eltwise_gelu COMMA 0 COMMA 0>, gelu);
 
 template<dnnl::algorithm algo, int alpha, int beta>
-DNNLEltwiseKernel<algo, alpha, beta>::DNNLEltwiseKernel(bool register_kernel)
-{
-  mappings_.clear();
-  mappings_[static_cast<int>(dnnl::algorithm::eltwise_relu)] = "dnnl_nchw_relu";
-  mappings_[static_cast<int>(dnnl::algorithm::eltwise_swish)] = "dnnl_nchw_swish";
-  mappings_[static_cast<int>(dnnl::algorithm::eltwise_gelu)] = "dnnl_nchw_gelu";
-
-  // registering kernel should no happen
-  // when derived class is calling this constructor
-  if (register_kernel == true)
-    kernels[mappings_[static_cast<int>(algo)]] = this;
-}
-
-template<dnnl::algorithm algo, int alpha, int beta>
 void DNNLEltwiseKernel<algo, alpha,beta>::Init(platform_info &pi, int n, int c, int h, int w)
 {
   tsc_ghz_ = pi.tsc_ghz;

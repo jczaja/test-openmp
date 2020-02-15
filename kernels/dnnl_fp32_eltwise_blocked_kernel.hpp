@@ -3,8 +3,8 @@
 
 #include <kernels/dnnl_fp32_eltwise_kernel.hpp>
 
-template<dnnl::algorithm algo>
-class DNNLEltwiseBlockedKernel : public DNNLEltwiseKernel<algo, 0,0> 
+template<dnnl::algorithm algo, int alpha, int beta>
+class DNNLEltwiseBlockedKernel : public DNNLEltwiseKernel<algo, alpha, beta> 
 {
   public:
     DNNLEltwiseBlockedKernel();
@@ -14,7 +14,7 @@ class DNNLEltwiseBlockedKernel : public DNNLEltwiseKernel<algo, 0,0>
 
     virtual void ShowInfo(bool cold_caches);
 
-    ~DNNLEltwiseBlockedKernel();
+    virtual ~DNNLEltwiseBlockedKernel();
 
   private:
    void InitializeData(float* ptr, unsigned int sized);

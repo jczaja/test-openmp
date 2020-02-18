@@ -3,7 +3,7 @@
 
 #include <kernels/dnnl_fp32_conv_kernel.hpp>
 
-class DNNLConvWinogradKernel : public DNNLKernel<NumF, 3, 3>
+class DNNLConvWinogradKernel : public DNNLKernel<NumF, HeightF, WidthF>
 {
   public:
     // Registration of kernel

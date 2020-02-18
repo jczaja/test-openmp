@@ -34,7 +34,7 @@ void DNNLKernel<NF, HF, WF>::Init(platform_info &pi, int n, int c, int h, int w)
   auto num_filters = NF;
   dnnl::memory::dims weights_tz = {num_filters, c, HF, WF};
   dnnl::memory::dims bias_tz = {num_filters};
-  dnnl::memory::dims strides = {4,4};
+  dnnl::memory::dims strides = {1,1};
   dnnl::memory::dims padding = {0,0};
 
   auto weights_md = dnnl::memory::desc(weights_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::oihw);

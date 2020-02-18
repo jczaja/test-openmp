@@ -57,7 +57,7 @@ endif()
 FetchContent_Declare(
 dnnl
 GIT_REPOSITORY https://github.com/intel/mkl-dnn
-GIT_TAG v1.1.1
+GIT_TAG v1.2
 GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(dnnl)
@@ -155,6 +155,8 @@ add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CUR
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
@@ -169,6 +171,8 @@ add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_kernel.cpp"
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"

@@ -59,6 +59,20 @@ function eltwise_experiment()
   popd
 }
 
+function binary_experiment()
+{
+  mkdir -p $1
+  mkdir $2
+  pushd $2
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  sudo make enable_turbo_boost
+  make -j 4 test-openmp-gomp
+  sudo make disable_turbo_boost
+  make roofline
+  cp roofline* cputest.txt memtest*.txt runtime.txt traffic.txt work.txt algo_info.txt cpu_info.txt $1
+  popd
+}
+
 function pool_experiment()
 {
   mkdir -p $1
@@ -92,6 +106,10 @@ else
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_cold_caches build-eltwise-nchw-cold-caches dnnl_nchw_gelu true full
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_warm_caches build-eltwise-blocked-warm-caches dnnl_blocked_gelu false full
   eltwise_experiment $DATA_DIR/dnnl_blocked_gelu_cold_caches build-eltwise-blocked-cold-caches dnnl_blocked_gelu true full
+  binary_experiment $DATA_DIR/dnnl_nchw_gelu_warm_caches build-binary-nchw-warm-caches dnnl_nchw_binary_add false full
+  binary_experiment $DATA_DIR/dnnl_nchw_gelu_cold_caches build-binary-nchw-cold-caches dnnl_nchw_binary_add true full
+  binary_experiment $DATA_DIR/dnnl_blocked_gelu_warm_caches build-binary-blocked-warm-caches dnnl_blocked_binary_add false full
+  binary_experiment $DATA_DIR/dnnl_blocked_gelu_cold_caches build-binary-blocked-cold-caches dnnl_blocked_binary_add true full
   pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches build-pool-nchw-warm-caches dnnl_nchw_pool_avg false full
   pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches build-pool-nchw-cold-caches dnnl_nchw_pool_avg true full
   pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches build-pool-blocked-warm-caches dnnl_blocked_pool_avg false full

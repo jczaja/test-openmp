@@ -102,8 +102,8 @@ else
   conv_experiment $DATA_DIR/dnnl_nchw_conv_cold_caches-socket build-conv-nchw-cold-caches-socket dnnl_nchw_conv true socket
   conv_experiment $DATA_DIR/dnnl_blocked_conv_warm_caches-socket build-conv-blocked-warm-caches-socket dnnl_blocked_conv false socket
   conv_experiment $DATA_DIR/dnnl_blocked_conv_cold_caches-socket build-conv-blocked-cold-caches-socket dnnl_blocked_conv true socket
-  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_warm_caches build-conv-winograd-warm-caches false socket
-  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_cold_caches build-conv-winograd-cold-caches true socket
+  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_warm_caches-socket build-conv-winograd-warm-caches-socket false socket
+  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_cold_caches-socket build-conv-winograd-cold-caches-socket true socket
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-socket build-tnc-layer_norm_warm_caches-socket dnnl_tnc_layer_norm false socket
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-socket build-tnc-layer_norm_cold_caches-socket dnnl_tnc_layer_norm true socket
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_warm_caches-socket build-eltwise-nchw-warm-caches-socket dnnl_nchw_gelu false socket
@@ -120,8 +120,8 @@ else
   conv_experiment $DATA_DIR/dnnl_nchw_conv_cold_caches-single build-conv-nchw-cold-caches-single dnnl_nchw_conv true single
   conv_experiment $DATA_DIR/dnnl_blocked_conv_warm_caches-single build-conv-blocked-warm-caches-single dnnl_blocked_conv false single
   conv_experiment $DATA_DIR/dnnl_blocked_conv_cold_caches-single build-conv-blocked-cold-caches-single dnnl_blocked_conv true single
-  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_warm_caches build-conv-winograd-warm-caches false single
-  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_cold_caches build-conv-winograd-cold-caches true single
+  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_warm_caches-single build-conv-winograd-warm-caches-single false single
+  conv_winograd_experiment $DATA_DIR/dnnl_winograd_conv_cold_caches-single build-conv-winograd-cold-caches-single true single
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-single build-tnc-layer_norm_warm_caches-single dnnl_tnc_layer_norm false single
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-single build-tnc-layer_norm_cold_caches-single dnnl_tnc_layer_norm true single
   eltwise_experiment $DATA_DIR/dnnl_nchw_gelu_warm_caches-single build-eltwise-nchw-warm-caches-single dnnl_nchw_gelu false single

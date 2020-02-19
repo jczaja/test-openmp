@@ -102,8 +102,6 @@ struct CpuBench : public Xbyak::CodeGenerator {
       vfmadd132ps(zmm27,zmm1,zmm2);
       vfmadd132ps(zmm28,zmm1,zmm2);
       vfmadd132ps(zmm29,zmm1,zmm2);
-      vfmadd132ps(zmm30,zmm1,zmm2);
-      vfmadd132ps(zmm31,zmm1,zmm2);
     }
     dec(rcx);
     jnz("Loop_over");
@@ -362,7 +360,7 @@ void run_cpu_test( platform_info& pi)
   std::cout << " Maximal Theoretical peak performance: " << pi.gflops << " [GFLOPS/second]" << std::endl;
 
   // Create Kernel 
-  const int num_fmas = 28*9;
+  const int num_fmas = 28*9; // 28 is number of FMA instructions inside block
   const int num_loops = 100;
   const unsigned long long num_iterations = 1000000;
 
@@ -383,6 +381,12 @@ void run_cpu_test( platform_info& pi)
       bench_code();
   }
   rt.Stop();
+
+  // How much FLOPS is executed
+  // We are using FMA instructions, hence 
+  //    avx's FMA should perform 8 FLOPS
+  //    avx2's FMA should perform 16 FLOPS
+  //    avx-512's FMA should perform 32 FLOPS 
 
   const double total_work = pi.fmaspc*num_fmas*num_loops*pi.num_total_phys_cores*num_iterations/1000000000.0; // Work in GFLOPS
   

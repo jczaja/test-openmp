@@ -7,15 +7,17 @@ execute_process(COMMAND awk "BEGIN {print ${expr}}" OUTPUT_VARIABLE __output)
 set(${output} ${__output} PARENT_SCOPE)
 endfunction()
 
-macro(get_data_traffic_count DATA_PATTERN)
+macro(get_data_traffic_count DATA_PATTERN1 DATA_PATTERN2)
 set(awk_script "{\$1=\$1\;print}")
 set(sed_script "s:,::g")
+#message(STATUS "Analysis Result: ${ANALYSIS_RESULT}")
 execute_process(
     COMMAND echo ${ANALYSIS_RESULT}
-    COMMAND grep -e ${DATA_PATTERN}
+    COMMAND grep -e ${DATA_PATTERN1}
+    COMMAND grep -e ${DATA_PATTERN2}
     COMMAND awk ${awk_script} # Remove trailing white characters
     COMMAND sed ${sed_script} # Remove commands from numeric data
-    COMMAND cut -d " " -f 1     # Get value of counter given
+    COMMAND cut -d " " -f 3     # Get value of counter given
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     OUTPUT_VARIABLE MIB_RAW
 )
@@ -56,36 +58,31 @@ file(WRITE ${CMAKE_BINARY_DIR}/algo_info.txt ${ALGO_INFO})
 endmacro()
 
 function(count_traffic num_reps data_reads data_writes)
-execute_process(COMMAND sudo perf stat -e data_reads,data_writes ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} --threading=${THREADING}
+execute_process(COMMAND sudo perf stat -e data_reads,data_writes --per-socket ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} --threading=${THREADING}
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_algorithm_info()
 #message(STATUS "ANALYSIS(${num_reps}): ${ANALYSIS_RESULT}")
-get_data_traffic_count("data_reads")
+get_data_traffic_count("S0" "data_reads")
 set(${data_reads} ${MIB} PARENT_SCOPE)
-get_data_traffic_count("data_writes")
+get_data_traffic_count("S0" "data_writes")
 set(${data_writes} ${MIB} PARENT_SCOPE)
 endfunction()
 
 function(count_xeon_traffic num_reps data_reads data_writes)
-execute_process(COMMAND sudo perf stat -e uncore_imc_0/cas_count_read/,uncore_imc_0/cas_count_write/,uncore_imc_1/cas_count_read/,uncore_imc_1/cas_count_write/,uncore_imc_2/cas_count_read/,uncore_imc_2/cas_count_write/,uncore_imc_3/cas_count_read/,uncore_imc_3/cas_count_write/,uncore_imc_4/cas_count_read/,uncore_imc_4/cas_count_write/,uncore_imc_5/cas_count_read/,uncore_imc_5/cas_count_write/ ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W}
+execute_process(COMMAND sudo perf stat -e uncore_imc_*/cas_count_read/,uncore_imc_*/cas_count_write/ --per-socket ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W}
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_algorithm_info()
 # Reads
 set(equation "")
-get_data_traffic_count("uncore_imc_0/cas_count_read")
+get_data_traffic_count("S0" "uncore_imc_*/cas_count_read")
 set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_1/cas_count_read")
+if(THREADING STREQUAL "full")
+get_data_traffic_count("S1" "uncore_imc_*/cas_count_read")
 set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_2/cas_count_read")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_3/cas_count_read")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_4/cas_count_read")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_5/cas_count_read")
-set(equation "${equation}+${MIB}")
+endif()
+
 string(STRIP ${equation} equation_stripped)
 string(REGEX REPLACE "\n" "" equation_stripped "${equation_stripped}")
 floatexpr("${equation_stripped}" MIB)
@@ -93,18 +90,14 @@ set(${data_reads} ${MIB} PARENT_SCOPE)
 
 # Writes
 set(equation "")
-get_data_traffic_count("uncore_imc_0/cas_count_write")
+
+get_data_traffic_count("S0" "uncore_imc_*/cas_count_write")
 set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_1/cas_count_write")
+if(THREADING STREQUAL "full")
+get_data_traffic_count("S1" "uncore_imc_*/cas_count_write")
 set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_2/cas_count_write")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_3/cas_count_write")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_4/cas_count_write")
-set(equation "${equation}+${MIB}")
-get_data_traffic_count("uncore_imc_5/cas_count_write")
-set(equation "${equation}+${MIB}")
+endif()
+
 string(STRIP ${equation} equation_stripped)
 string(REGEX REPLACE "\n" "" equation_stripped "${equation_stripped}")
 floatexpr("${equation_stripped}" MIB)

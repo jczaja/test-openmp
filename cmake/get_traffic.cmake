@@ -76,10 +76,10 @@ ERROR_VARIABLE ANALYSIS_RESULT)
 get_algorithm_info()
 # Reads
 set(equation "")
-get_data_traffic_count("S0" "uncore_imc_*/cas_count_read")
+get_data_traffic_count("S0" "cas_count_read")
 set(equation "${equation}+${MIB}")
 if(THREADING STREQUAL "full")
-get_data_traffic_count("S1" "uncore_imc_*/cas_count_read")
+get_data_traffic_count("S1" "cas_count_read")
 set(equation "${equation}+${MIB}")
 endif()
 
@@ -91,10 +91,10 @@ set(${data_reads} ${MIB} PARENT_SCOPE)
 # Writes
 set(equation "")
 
-get_data_traffic_count("S0" "uncore_imc_*/cas_count_write")
+get_data_traffic_count("S0" "cas_count_write")
 set(equation "${equation}+${MIB}")
 if(THREADING STREQUAL "full")
-get_data_traffic_count("S1" "uncore_imc_*/cas_count_write")
+get_data_traffic_count("S1" "cas_count_write")
 set(equation "${equation}+${MIB}")
 endif()
 

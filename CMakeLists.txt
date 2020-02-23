@@ -152,6 +152,7 @@ set_target_properties(assembly_dump PROPERTIES SUFFIX "")
 set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_fc_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp"
@@ -168,6 +169,7 @@ target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
 add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
+"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_fc_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp"

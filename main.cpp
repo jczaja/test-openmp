@@ -55,6 +55,7 @@ DEFINE_bool(cputest, false, "Whether to show cpu capabilities");
 DEFINE_bool(memtest, false, "Whether to perform memory throughput test");
 DEFINE_bool(cold_caches, false, "Whether to perform execution with caches cold");
 
+#ifndef MEMORY_TRAFFIC_COUNT
 struct CpuBench : public Xbyak::CodeGenerator {
     CpuBench(const int num_fmas, const int num_loops)
 {
@@ -545,6 +546,7 @@ void run_mem_test(platform_info& pi)
   free(src);
   free(dst);
 }
+#endif // not TRAFFIC
 
 int main(int argc, char** argv)
 {
@@ -575,6 +577,7 @@ int main(int argc, char** argv)
     std::cout << "  Threads: " <<  execution_threads[FLAGS_threading] << std::endl;
 
 
+#ifndef MEMORY_TRAFFIC_COUNT
     // CPU thoughput test
     if (FLAGS_cputest) {
        run_cpu_test(pi);
@@ -586,6 +589,7 @@ int main(int argc, char** argv)
        run_mem_test(pi);
        return 0;
     }
+#endif
 
     omp_set_num_threads(execution_threads[FLAGS_threading]);
 

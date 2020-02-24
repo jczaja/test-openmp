@@ -168,19 +168,43 @@ set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -D
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
-add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp 
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_fc_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_blocked_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_blocked_kernel.cpp"
-"${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
+set(TRAFFIC_SRC ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h)
+
+message(STATUS "ALGO=${ALGO}")
+if(ALGO STREQUAL "sum")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_nchw_fc")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_fc_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_nchw_conv")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_blocked_conv")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_blocked_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_winograd_conv")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_kernel.cpp")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_conv_winograd_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_nchw_binary")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_blocked_binary")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_kernel.cpp")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_binary_blocked_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_nchw_gelu")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_blocked_gelu")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_kernel.cpp")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_eltwise_blocked_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_tnc_layer_norm")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_layer_norm_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_nchw_pool_avg")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp")
+elseif (ALGO STREQUAL "dnnl_blocked_pool_avg")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp")
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_blocked_kernel.cpp")
+else()
+set(TRAFFIC_SRC ${TRAFFIC_SRC} "${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp")
+endif()
+
+add_executable(test-memory-traffic ${TRAFFIC_SRC}) 
 set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 

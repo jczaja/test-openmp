@@ -10,7 +10,7 @@ set(script "${script}\n set logscale xy")
 set(script "${script}\n set grid")
 set(script "${script}\n max(x,y) = x > y ? x : y")
 set(script "${script}\n rigidpoint = ${CPU_THROUGHPUT}/${MEMORY_THRGHPT}")    # Memory roofline
-set(script "${script}\n set xrange[0.1:max(rigidpoint,${OI})*10.0]")
+set(script "${script}\n set xrange[0.01:max(rigidpoint,${OI})*10.0]")
 set(script "${script}\n set yrange[0.1:${CPU_THRGHPT}*10.0]")
 set(script "${script}\n min(x,y) = x < y ? x : y")
 set(script "${script}\n memroof(x) = x *${MEMORY_THRGHPT}")    # Memory roofline

@@ -70,10 +70,13 @@ void DNNLConvBlockedKernel::Init(platform_info &pi, int n, int c, int h, int w)
 
 void DNNLConvBlockedKernel::InitializeData(float* ptr, unsigned int sized)
 {
+// No initializing data for Traffic counting
+#ifndef MEMORY_TRAFFIC_COUNT
   // Init with some random data
   for(unsigned int i=0; i< sized; ++i) {
       ptr[i] = i%13;
   }
+#endif
 }
 
 void DNNLConvBlockedKernel::ShowInfo(bool cold_caches)

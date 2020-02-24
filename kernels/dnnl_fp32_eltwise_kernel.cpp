@@ -37,10 +37,13 @@ void DNNLEltwiseKernel<algo, alpha,beta>::Init(platform_info &pi, int n, int c, 
 
 template<dnnl::algorithm algo, int alpha, int beta>
 void DNNLEltwiseKernel<algo, alpha,beta>::InitializeData(float* ptr, unsigned int sized) {
+// No initializing data for Traffic counting
+#ifndef MEMORY_TRAFFIC_COUNT
   // Init with some random data
   for(unsigned int i=0; i< sized; ++i) {
       ptr[i] = i%13;
   }
+#endif
 }
 
 template<dnnl::algorithm algo, int alpha, int beta>
@@ -52,6 +55,8 @@ void DNNLEltwiseKernel<algo, alpha,beta>::ShowInfo(bool cold_caches)
   int c = dims[1];
   int h = dims[2];
   int w = dims[3];
+
+  std::cout << "Batch size: " << n << std::endl;
 
   auto algorithm_info = this->mappings_[static_cast<int>(algo)];
   std::replace(algorithm_info.begin(), algorithm_info.end(), '_', ' ');

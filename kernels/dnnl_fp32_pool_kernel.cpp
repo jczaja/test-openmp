@@ -53,10 +53,13 @@ void DNNLPoolKernel<WP>::Init(platform_info &pi, int n, int c, int h, int w)
 template<unsigned int WP>
 void DNNLPoolKernel<WP>::InitializeData(float* ptr, unsigned int sized)
 {
+// No initializing data for Traffic counting
+#ifndef MEMORY_TRAFFIC_COUNT
   // Init with some random data
   for(unsigned int i=0; i< sized; ++i) {
       ptr[i] = i%13;
   }
+#endif
 }
 
 template<unsigned int WP>

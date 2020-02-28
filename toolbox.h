@@ -216,7 +216,7 @@ class MemoryTraffic : public ToolBox
     close(fdw_);
   }
 
-  inline void StartCounting(void) {
+  virtual void StartCounting(void) {
     // If we are to do cold caches then we overwrite existing
     // caches to make sure no kernel used data is in cache
     if (clear_cache_)
@@ -228,7 +228,7 @@ class MemoryTraffic : public ToolBox
     return;
   }
 
-  inline void StopCounting(void) {
+  virtual void StopCounting(void) {
     ioctl(fdr_, PERF_EVENT_IOC_DISABLE, 0);
     ioctl(fdw_, PERF_EVENT_IOC_DISABLE, 0);
     long long countr = 0;
@@ -326,7 +326,7 @@ class XeonMemoryTraffic : public MemoryTraffic
     close(fdw5_);
   }
 
-  inline void StartCounting(void) {
+  virtual void StartCounting(void) {
     // If we are to do cold caches then we overwrite existing
     // caches to make sure no kernel used data is in cache
     if (clear_cache_)
@@ -361,7 +361,7 @@ class XeonMemoryTraffic : public MemoryTraffic
     return;
   }
 
-  inline void StopCounting(void) {
+  virtual void StopCounting(void) {
     ioctl(fdr_, PERF_EVENT_IOC_DISABLE, 0);
     ioctl(fdr1_, PERF_EVENT_IOC_DISABLE, 0);
     ioctl(fdr2_, PERF_EVENT_IOC_DISABLE, 0);

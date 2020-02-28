@@ -18,13 +18,13 @@ class BaseKernel
     virtual void RunSingle(void) = 0;
     void RunCold(int num_reps, bool is_xeon) {
 #ifdef MEMORY_TRAFFIC_COUNT
-      MemoryTraffic mt = is_xeon ? XeonMemoryTraffic(true) : MemoryTraffic(true);
+      MemoryTraffic* mt = is_xeon ? new XeonMemoryTraffic(true) : new MemoryTraffic(true);
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,true);
 #endif
 #ifdef MEMORY_TRAFFIC_COUNT
-        mt.StartCounting();
+        mt->StartCounting();
 #endif
       for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST
@@ -37,7 +37,8 @@ class BaseKernel
 #endif
       }
 #ifdef MEMORY_TRAFFIC_COUNT
-        mt.StopCounting();
+        mt->StopCounting();
+        delete mt;
 #endif
     }
 
@@ -48,13 +49,13 @@ class BaseKernel
       }
 
 #ifdef MEMORY_TRAFFIC_COUNT
-      MemoryTraffic mt = is_xeon ? XeonMemoryTraffic(false) : MemoryTraffic(false);
+      MemoryTraffic* mt = is_xeon ? new XeonMemoryTraffic(true) : new MemoryTraffic(true);
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,false);
 #endif
 #ifdef MEMORY_TRAFFIC_COUNT
-        mt.StartCounting();
+        mt->StartCounting();
 #endif
       for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST
@@ -66,7 +67,8 @@ class BaseKernel
 #endif
       }
 #ifdef MEMORY_TRAFFIC_COUNT
-        mt.StopCounting();
+        mt->StopCounting();
+        delete mt;
 #endif
     }
 

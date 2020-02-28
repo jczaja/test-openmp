@@ -10,17 +10,18 @@ endfunction()
 macro(get_data_traffic_count DATA_PATTERN1 DATA_PATTERN2)
 set(awk_script "{\$1=\$1\;print}")
 set(sed_script "s:,::g")
-#message(STATUS "Analysis Result: ${ANALYSIS_RESULT}")
+#message(STATUS "Analysis Result: ${REGULAR_OUTPUT}")
 execute_process(
-    COMMAND echo ${ANALYSIS_RESULT}
+    COMMAND echo ${REGULAR_OUTPUT}
     COMMAND grep -e ${DATA_PATTERN1}
     COMMAND grep -e ${DATA_PATTERN2}
     COMMAND awk ${awk_script} # Remove trailing white characters
     COMMAND sed ${sed_script} # Remove commands from numeric data
-    COMMAND cut -d " " -f 3     # Get value of counter given
+    COMMAND cut -d " " -f 2     # Get value of counter given
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     OUTPUT_VARIABLE MIB_RAW
 )
+#message(STATUS "MIB: ${MIB_RAW}")
 string(STRIP ${MIB_RAW} MIB)
 endmacro()
 
@@ -58,14 +59,14 @@ file(WRITE ${CMAKE_BINARY_DIR}/algo_info.txt ${ALGO_INFO})
 endmacro()
 
 function(count_traffic num_reps data_reads data_writes)
-execute_process(COMMAND sudo perf stat -e data_reads,data_writes --per-socket ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} --threading=${THREADING}
+execute_process(COMMAND sudo ${CMAKE_BINARY_DIR}/test-memory-traffic --num_reps ${num_reps} --algo=${ALGO} --batch_size=${N} --cold_caches=${COLD_CACHES} --channel_size=${C} --height=${H} --width=${W} --threading=${THREADING}
 OUTPUT_VARIABLE REGULAR_OUTPUT
 ERROR_VARIABLE ANALYSIS_RESULT)
 get_algorithm_info()
 #message(STATUS "ANALYSIS(${num_reps}): ${ANALYSIS_RESULT}")
-get_data_traffic_count("S0" "data_reads")
+get_data_traffic_count("MiB" "data_reads")
 set(${data_reads} ${MIB} PARENT_SCOPE)
-get_data_traffic_count("S0" "data_writes")
+get_data_traffic_count("MiB" "data_writes")
 set(${data_writes} ${MIB} PARENT_SCOPE)
 endfunction()
 
@@ -130,34 +131,13 @@ string(STRIP ${equation} equation_stripped)
 string(REGEX REPLACE "\n" "" equation_stripped "${equation_stripped}")
 #message("EQ_STRIPPED: ${equation_stripped}")
 floatexpr("${equation_stripped}" execution_writes)
-# Execute program without execution of evaluated algorithm 
-set(data_reads "0")
-set(data_writes "0")
-set(num_reps "0")
-if (DEFINED Xeon)
-count_xeon_traffic(${num_reps} data_reads data_writes)
-else()
-count_traffic(${num_reps} data_reads data_writes)
-endif()
-set(equation "(${no_execution_reads}*(${iter}-1)+${data_reads})/${iter}")
-string(STRIP ${equation} equation_stripped)
-string(REGEX REPLACE "\n" "" equation_stripped "${equation_stripped}")
-#message("EQ_STRIPPED: ${equation_stripped}")
-floatexpr("${equation_stripped}" no_execution_reads)
-set(equation "(${no_execution_writes}*(${iter}-1)+${data_writes})/${iter}")
-string(STRIP ${equation} equation_stripped)
-string(REGEX REPLACE "\n" "" equation_stripped "${equation_stripped}")
-#message("EQ_STRIPPED: ${equation_stripped}")
-floatexpr("${equation_stripped}" no_execution_writes)
 math(EXPR iter "${iter}+1")
 endwhile()
 
 message(STATUS "execution_reads: ${execution_reads}")
 message(STATUS "execution_writes: ${execution_writes}")
-message(STATUS "no_execution_reads: ${no_execution_reads}")
-message(STATUS "no_execution_writes: ${no_execution_writes}")
 # Substract baseline memory usage from total and conver MiB to bytes
-set(traffic_equation "1024.0*1024.0*(${execution_reads}-${no_execution_reads}+${execution_writes}-${no_execution_writes})")
+set(traffic_equation "1024.0*1024.0*(${execution_reads}+${execution_writes})")
 string(STRIP ${traffic_equation} traffic_equation_stripped)
 string(REGEX REPLACE "\n" "" traffic_equation_stripped "${traffic_equation_stripped}")
 # Combine reads and writes to get total traffic and

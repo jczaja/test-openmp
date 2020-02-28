@@ -12,6 +12,7 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
+#include <iostream>
 
 struct platform_info
 {
@@ -189,27 +190,31 @@ class ToolBox
 class MemoryTraffic : public ToolBox 
 {
  public:
-  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fd_(-1) {
+  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fdr_(-1) {
     memset(&pe_, 0, sizeof(struct perf_event_attr));
-    // HW conters LLC -> DRAM are not measuring prefetcher
-    pe_.type = PERF_TYPE_HARDWARE;
-    pe_.config = PERF_COUNT_HW_CACHE_MISSES; 
-    //pe_.type = PERF_TYPE_RAW;
-    //pe_.config = 0xfed15051; 
+    pe_.type = 12; // Desktop data_reads and data_writes
+    pe_.config = 1; // 1 - data_reads, 2 - data_writes 
     pe_.disabled = 1;
-    pe_.exclude_kernel = 1; // exclude events taking place in kernel
-    pe_.exclude_hv = 1;     // Exclude hypervisor
+    pe_.inherit = 1;
+    pe_.exclude_kernel = 0; // Include Kernel events
+    pe_.exclude_hv = 0;     // Include hypervisor
 
-    // Measure memory traffic for this process and its execution on
-    // any/all cpus
-    fd_ = perf_event_open(&pe_, 0, -1, -1, 0);
-    if (fd_ == -1) {
-      throw "ERROR opening leader : PERF_COUNT_HW_CACHE_MISSES";
+    fdr_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    if (fdr_ == -1) {
+      throw "ERROR opening leader : Kernel PMU IMC data reads";
+    }
+
+    // Now modify config to have data_writes counted    
+    pe_.config = 2;
+    fdw_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    if (fdw_ == -1) {
+      throw "ERROR opening leader : Kernel PMU IMC data writes";
     }
   }
 
   ~MemoryTraffic() {
-    close(fd_);
+    close(fdr_);
+    close(fdw_);
   }
 
   inline void StartCounting(void) {
@@ -217,28 +222,33 @@ class MemoryTraffic : public ToolBox
     // caches to make sure no kernel used data is in cache
     if (clear_cache_)
         overwrite_caches();
-    ioctl(fd_, PERF_EVENT_IOC_RESET, 0);
-    ioctl(fd_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw_, PERF_EVENT_IOC_ENABLE, 0);
     return;
   }
 
   inline void StopCounting(void) {
-    ioctl(fd_, PERF_EVENT_IOC_DISABLE, 0);
-    long long count = 0;
-    auto num_reads = read(fd_, &count, sizeof(long long));
-
+    ioctl(fdr_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw_, PERF_EVENT_IOC_DISABLE, 0);
+    long long countr = 0;
+    long long countw = 0;
+    auto num_reads = read(fdr_, &countr, sizeof(long long));
     if (num_reads == -1) {
       throw "ERROR reading : PMU DRAM counters";
     }
+    auto num_writes = read(fdw_, &countw, sizeof(long long));
+    if (num_writes == -1) {
+      throw "ERROR reading : PMU DRAM counters";
+    }
     
-    // LLC miss * linesize is rough memory traffic
-    total_ =  (count)*llc_cache_linesize_;
+    // IMC transfer * linesize is rough memory traffic
+    auto data_reads_mib =  (countr)*llc_cache_linesize_/1024/1024;
+    auto data_writes_mib =  (countw)*llc_cache_linesize_/1024/1024;
 
-
-    std::cout << "Final: " << count << std::endl;
-
-    // Returning value to the cout stream directly makes lots of memory movement 
-    std::cout << "MemoryTraffic: " << total_ << std::endl;
+    std::cout << "MemoryTraffic: " << data_reads_mib << " MiB data_reads" << std::endl;
+    std::cout << "MemoryTraffic: " << data_writes_mib << " MiB data_writes" << std::endl;
   }
 
  protected:
@@ -252,7 +262,8 @@ class MemoryTraffic : public ToolBox
   }
 
  private:
-  int fd_;
+  int fdr_;
+  int fdw_;
   struct perf_event_attr pe_;
 };
 

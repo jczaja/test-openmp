@@ -18,10 +18,13 @@ class BaseKernel
     virtual void RunSingle(void) = 0;
     void RunCold(int num_reps) {
 #ifdef MEMORY_TRAFFIC_COUNT
-      auto mt = ToolBox(true); // Just overwritting caches
+      auto mt = MemoryTraffic(true); // Just overwritting caches
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,true);
+#endif
+#ifdef MEMORY_TRAFFIC_COUNT
+        mt.StartCounting();
 #endif
       for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST
@@ -33,6 +36,9 @@ class BaseKernel
         rt.Stop();
 #endif
       }
+#ifdef MEMORY_TRAFFIC_COUNT
+        mt.StopCounting();
+#endif
     }
 
     void RunWarm(int num_reps) {
@@ -41,8 +47,14 @@ class BaseKernel
         RunSingle();
       }
 
+#ifdef MEMORY_TRAFFIC_COUNT
+      auto mt = MemoryTraffic(false); // No caches overwritting
+#endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,false);
+#endif
+#ifdef MEMORY_TRAFFIC_COUNT
+        mt.StartCounting();
 #endif
       for(int n = 0; n< num_reps; ++n) {
 #ifdef RUNTIME_TEST
@@ -53,6 +65,9 @@ class BaseKernel
         rt.Stop();
 #endif
       }
+#ifdef MEMORY_TRAFFIC_COUNT
+        mt.StopCounting();
+#endif
     }
 
   public:

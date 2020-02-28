@@ -25,12 +25,13 @@ struct platform_info
     unsigned long long max_bandwidth; 
     float gflops; // Giga Floating point operations per second
     int fmaspc;
+    bool is_xeon; 
 };
 
 class nn_hardware_platform
 {
     public:
-        nn_hardware_platform() : m_num_logical_processors(0), m_num_physical_processors_per_socket(0), m_num_hw_threads_per_socket(0) ,m_num_ht_threads(1), m_num_total_phys_cores(1), m_tsc_ghz(0), m_fmaspc(0)
+        nn_hardware_platform() : m_num_logical_processors(0), m_num_physical_processors_per_socket(0), m_num_hw_threads_per_socket(0) ,m_num_ht_threads(1), m_num_total_phys_cores(1), m_tsc_ghz(0), m_fmaspc(0), m_is_xeon(false)
         {
 #ifdef __linux__
             m_num_logical_processors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -62,6 +63,9 @@ class nn_hardware_platform
 
                 if(cpuinfo_line.find("model") != std::string::npos) {
                     cpu_name = cpuinfo_line;
+                    // If model name contains "Xeon" then we Assume Intel(R) Xeon platform
+                    m_is_xeon = cpuinfo_line.find("Xeon") != std::string::npos;
+                    
                     // convert std::string into number eg. skip colon and after it in the same line  should be number of HW threads per socket
                     std::stringstream( cpuinfo_line.substr(cpuinfo_line.find("@") + 1) ) >> m_tsc_ghz; 
                 }
@@ -115,6 +119,7 @@ class nn_hardware_platform
        pi.max_bandwidth = m_max_bandwidth;
        pi.gflops = m_fmaspc*m_num_total_phys_cores*m_tsc_ghz;      
        pi.fmaspc = m_fmaspc;
+       pi.is_xeon = m_is_xeon; 
     }
     private:
         long m_num_logical_processors;
@@ -125,6 +130,7 @@ class nn_hardware_platform
         float m_tsc_ghz;
         short int m_fmaspc;
         unsigned long long m_max_bandwidth;
+        bool m_is_xeon;
 };
 
 class ToolBox
@@ -190,7 +196,7 @@ class ToolBox
 class MemoryTraffic : public ToolBox 
 {
  public:
-  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fdr_(-1) {
+  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fdr_(-1), fdw_(-1) {
     memset(&pe_, 0, sizeof(struct perf_event_attr));
     pe_.type = 12; // Desktop data_reads and data_writes
     pe_.config = 1; // 1 - data_reads, 2 - data_writes 
@@ -200,19 +206,12 @@ class MemoryTraffic : public ToolBox
     pe_.exclude_hv = 0;     // Include hypervisor
 
     fdr_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    if (fdr_ == -1) {
-      throw "ERROR opening leader : Kernel PMU IMC data reads";
-    }
-
     // Now modify config to have data_writes counted    
     pe_.config = 2;
     fdw_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    if (fdw_ == -1) {
-      throw "ERROR opening leader : Kernel PMU IMC data writes";
-    }
   }
 
-  ~MemoryTraffic() {
+  virtual ~MemoryTraffic() {
     close(fdr_);
     close(fdw_);
   }
@@ -255,17 +254,178 @@ class MemoryTraffic : public ToolBox
   long perf_event_open(struct perf_event_attr*
     hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags)
   {
-    int ret = syscall(__NR_perf_event_open, hw_event, pid, cpu,
-     group_fd, flags);
-
+    int ret;
+    if((ret=syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags)) == -1 ) {
+      throw "ERROR opening leader : Kernel PMU IMC";
+    }
     return ret;
   }
 
- private:
+ protected:
   int fdr_;
   int fdw_;
   struct perf_event_attr pe_;
 };
+
+class XeonMemoryTraffic : public MemoryTraffic 
+{
+
+ public:
+  XeonMemoryTraffic(bool clear_cache = true) : MemoryTraffic(clear_cache), 
+   fdr1_(-1), fdw1_(-1), fdr2_(-1), fdw2_(-1),fdr3_(-1), fdw3_(-1),
+    fdr4_(-1), fdw4_(-1),fdr5_(-1), fdw5_(-1) {
+    memset(&pe_, 0, sizeof(struct perf_event_attr));
+    pe_.config = 772; // 772 - cas_count_read, 3076 - cas_count_write
+    pe_.disabled = 1;
+    pe_.inherit = 1;
+    pe_.exclude_kernel = 0; // Include Kernel events
+    pe_.exclude_hv = 0;     // Include hypervisor
+
+    // Intel Xeon Read IMC <0-5> read counters
+    pe_.type = 14; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
+    fdr_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 15; // Intel Xeon cas_count_read IMC 1
+    fdr1_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 16; // Intel Xeon cas_count_read IMC 2
+    fdr2_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 17; // Intel Xeon cas_count_read IMC 3
+    fdr3_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 18; // Intel Xeon cas_count_read IMC 4
+    fdr4_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 19; // Intel Xeon cas_count_read IMC 5
+    fdr5_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+
+    // Now modify config to have data_writes counted    
+    pe_.config = 3076;
+    pe_.type = 14; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
+    fdw_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 15; // Intel Xeon cas_count_write IMC 1
+    fdw1_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 16; // Intel Xeon cas_count_write IMC 2
+    fdw2_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 17; // Intel Xeon cas_count_write IMC 3
+    fdw3_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 18; // Intel Xeon cas_count_write IMC 4
+    fdw4_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+    pe_.type = 19; // Intel Xeon cas_count_write IMC 5
+    fdw5_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+  }
+
+  virtual ~XeonMemoryTraffic() {
+    close(fdr_);
+    close(fdw_);
+    close(fdr1_);
+    close(fdw1_);
+    close(fdr2_);
+    close(fdw2_);
+    close(fdr3_);
+    close(fdw3_);
+    close(fdr4_);
+    close(fdw4_);
+    close(fdr5_);
+    close(fdw5_);
+  }
+
+  inline void StartCounting(void) {
+    // If we are to do cold caches then we overwrite existing
+    // caches to make sure no kernel used data is in cache
+    if (clear_cache_)
+        overwrite_caches();
+    ioctl(fdr_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr1_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr2_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr3_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr4_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdr5_, PERF_EVENT_IOC_RESET, 0);
+
+    ioctl(fdw_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw1_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw2_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw3_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw4_, PERF_EVENT_IOC_RESET, 0);
+    ioctl(fdw5_, PERF_EVENT_IOC_RESET, 0);
+
+    ioctl(fdr_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr1_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr2_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr3_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr4_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdr5_, PERF_EVENT_IOC_ENABLE, 0);
+
+    ioctl(fdw_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw1_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw2_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw3_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw4_, PERF_EVENT_IOC_ENABLE, 0);
+    ioctl(fdw5_, PERF_EVENT_IOC_ENABLE, 0);
+    return;
+  }
+
+  inline void StopCounting(void) {
+    ioctl(fdr_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdr1_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdr2_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdr3_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdr4_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdr5_, PERF_EVENT_IOC_DISABLE, 0);
+
+    ioctl(fdw_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw1_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw2_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw3_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw4_, PERF_EVENT_IOC_DISABLE, 0);
+    ioctl(fdw5_, PERF_EVENT_IOC_DISABLE, 0);
+
+    long long countr = 0;
+    countr += get_pmu_value(fdr_);
+    countr += get_pmu_value(fdr1_);
+    countr += get_pmu_value(fdr2_);
+    countr += get_pmu_value(fdr3_);
+    countr += get_pmu_value(fdr4_);
+    countr += get_pmu_value(fdr5_);
+
+    long long countw = 0;
+    countw += get_pmu_value(fdw_);
+    countw += get_pmu_value(fdw1_);
+    countw += get_pmu_value(fdw2_);
+    countw += get_pmu_value(fdw3_);
+    countw += get_pmu_value(fdw4_);
+    countw += get_pmu_value(fdw5_);
+    
+    // IMC transfer * linesize is rough memory traffic
+    auto data_reads_mib =  (countr)*llc_cache_linesize_/1024/1024;
+    auto data_writes_mib =  (countw)*llc_cache_linesize_/1024/1024;
+
+    std::cout << "MemoryTraffic: " << data_reads_mib << " MiB data_reads" << std::endl;
+    std::cout << "MemoryTraffic: " << data_writes_mib << " MiB data_writes" << std::endl;
+  }
+
+  private:
+    long long get_pmu_value(int fd) {
+        long long count = 0;
+        auto num_reads = read(fd, &count, sizeof(long long));
+        if (num_reads == -1) {
+          throw "ERROR reading : PMU DRAM counters";
+        }
+        return count;
+    }
+
+
+  private:
+      int fdr1_;
+      int fdw1_;
+      int fdr2_;
+      int fdw2_;
+      int fdr3_;
+      int fdw3_;
+      int fdr4_;
+      int fdw4_;
+      int fdr5_;
+      int fdw5_;
+};
+
+
+
 
 class Runtime : public ToolBox
 {

@@ -16,9 +16,9 @@ class BaseKernel
     virtual void Init(platform_info &pi, int n, int c, int h, int w) = 0;
     virtual void ShowInfo(bool cold_caches) = 0;
     virtual void RunSingle(void) = 0;
-    void RunCold(int num_reps) {
+    void RunCold(int num_reps, bool is_xeon) {
 #ifdef MEMORY_TRAFFIC_COUNT
-      auto mt = MemoryTraffic(true); // Just overwritting caches
+      MemoryTraffic mt = is_xeon ? XeonMemoryTraffic(true) : MemoryTraffic(true);
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,true);
@@ -41,14 +41,14 @@ class BaseKernel
 #endif
     }
 
-    void RunWarm(int num_reps) {
+    void RunWarm(int num_reps, bool is_xeon) {
       // Warming up caches
       for(int n = 0; n < 10; ++n) {
         RunSingle();
       }
 
 #ifdef MEMORY_TRAFFIC_COUNT
-      auto mt = MemoryTraffic(false); // No caches overwritting
+      MemoryTraffic mt = is_xeon ? XeonMemoryTraffic(false) : MemoryTraffic(false);
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,false);

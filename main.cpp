@@ -596,9 +596,9 @@ int main(int argc, char** argv)
        kernels[FLAGS_algo]->Init(pi, FLAGS_batch_size, FLAGS_channel_size, FLAGS_height, FLAGS_width);
        kernels[FLAGS_algo]->ShowInfo(FLAGS_cold_caches);
        if (FLAGS_cold_caches == true) {
-         kernels[FLAGS_algo]->RunCold(FLAGS_num_reps);
+         kernels[FLAGS_algo]->RunCold(FLAGS_num_reps, pi.is_xeon);
        } else {
-         kernels[FLAGS_algo]->RunWarm(FLAGS_num_reps);
+         kernels[FLAGS_algo]->RunWarm(FLAGS_num_reps, pi.is_xeon);
        }
     }
 

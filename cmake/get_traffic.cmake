@@ -72,7 +72,7 @@ set(no_execution_writes "0")
 set(execution_reads "0")
 set(execution_writes "0")
 set(iter "1")
-while(iter LESS "10")
+while(iter LESS "1")
 # Execute program with single execution of evaluated algorithm
 set(num_reps "1")
 set(data_reads "0")

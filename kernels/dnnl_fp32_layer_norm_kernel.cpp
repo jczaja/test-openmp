@@ -24,33 +24,26 @@ void DNNLLayerNormKernel::Init(platform_info &pi, int n, int c, int h, int w)
   auto src_md = dnnl::memory::desc(src_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::tnc);
   src_.reset(new dnnl::memory(src_md, eng_)); 
   this->InitializeData(static_cast<float*>(src_->get_data_handle()),n*c*h*w);
- 
-  // Alocate stats
-  dnnl::memory::dims stats_tz = {h*w,n};
-  auto stats_md = dnnl::memory::desc(stats_tz, dnnl::memory::data_type::f32, dnnl::memory::format_tag::tn);
-  mean_.reset(new dnnl::memory(stats_md, eng_));
-  // ..mean
-  this->InitializeData(static_cast<float*>(mean_->get_data_handle()),h*w*n);
-  // .. variance
-  variance_.reset(new dnnl::memory(stats_md, eng_));
-  this->InitializeData(static_cast<float*>(variance_->get_data_handle()),h*w*n);
 
   // Alocate output
   dst_.reset(new dnnl::memory(src_md, eng_)); 
 
   // Create computational primitive
-  
   auto layer_norm_desc = dnnl::layer_normalization_forward::desc(dnnl::prop_kind::forward_inference,
     src_md,
-		stats_md,
 		0.0001f,
-    dnnl::normalization_flags::use_global_stats); 		
+    dnnl::normalization_flags::use_scale_shift); 		
   
+  // Alocate scale-shift
   auto layer_norm_pd = dnnl::layer_normalization_forward::primitive_desc(layer_norm_desc, eng_); 
+
+  // Get Scale Shift format
+  scale_shift_.reset(new dnnl::memory(layer_norm_pd.weights_desc(), eng_));
+  this->InitializeData(static_cast<float*>(scale_shift_->get_data_handle()), 2*c);
+
   layer_norm_.reset(new dnnl::layer_normalization_forward(layer_norm_pd));
   layer_norm_args_[DNNL_ARG_SRC] = *src_;  
-  layer_norm_args_[DNNL_ARG_MEAN] = *mean_;
-  layer_norm_args_[DNNL_ARG_VARIANCE] = *variance_;
+  layer_norm_args_[DNNL_ARG_SCALE_SHIFT] = *scale_shift_;
   layer_norm_args_[DNNL_ARG_DST] = *dst_;  
 }
 
@@ -83,11 +76,8 @@ DNNLLayerNormKernel::~DNNLLayerNormKernel()
   if (src_ ) {
    std::cout << "DNNL TNC Layer Norm " << " TNC SRC First element: " << static_cast<float*>(src_->get_data_handle())[0] << std::endl;
   }
-  if (mean_) {
-   std::cout << "DNNL TNC Layer Norm " << " TN MEAN First element: " << static_cast<float*>(mean_->get_data_handle())[0] << std::endl;
-  }
-  if (variance_) {
-   std::cout << "DNNL TNC Layer Norm " << " TN VARIANCE First element: " << static_cast<float*>(variance_->get_data_handle())[0] << std::endl;
+  if (scale_shift_) {
+   std::cout << "DNNL TNC Layer Norm " << " 2*C Scale_shift First element: " << static_cast<float*>(scale_shift_->get_data_handle())[0] << std::endl;
   }
   if (dst_ ) {
    std::cout << "DNNL TNC Layer Norm " << " TNC DST First element: " << static_cast<float*>(dst_->get_data_handle())[0] << std::endl;

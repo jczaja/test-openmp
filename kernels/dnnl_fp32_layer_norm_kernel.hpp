@@ -30,8 +30,7 @@ class DNNLLayerNormKernel : public BaseKernel {
    dnnl::engine eng_;
    dnnl::stream s_;
    std::unique_ptr<dnnl::memory> src_;
-   std::unique_ptr<dnnl::memory> mean_;
-   std::unique_ptr<dnnl::memory> variance_;
+   std::unique_ptr<dnnl::memory> scale_shift_;
    std::unique_ptr<dnnl::memory> dst_;
    std::unique_ptr<dnnl::primitive> layer_norm_;
    std::unordered_map<int, dnnl::memory> layer_norm_args_;

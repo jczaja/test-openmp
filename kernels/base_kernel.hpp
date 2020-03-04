@@ -49,7 +49,7 @@ class BaseKernel
       }
 
 #ifdef MEMORY_TRAFFIC_COUNT
-      MemoryTraffic* mt = is_xeon ? new XeonMemoryTraffic(true) : new MemoryTraffic(true);
+      MemoryTraffic* mt = is_xeon ? new XeonMemoryTraffic(false) : new MemoryTraffic(false);
 #endif
 #ifdef RUNTIME_TEST
       auto rt = Runtime(tsc_ghz_,false);

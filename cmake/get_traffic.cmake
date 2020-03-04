@@ -72,11 +72,17 @@ set(no_execution_writes "0")
 set(execution_reads "0")
 set(execution_writes "0")
 set(iter "1")
-math(EXPR minimum_threshold "${N}*${C}*${H}*${W}*4/1024/1024")
+# Warm caches we run 10 repetitions
+# and get a mean value as final one
+if(COLD_CACHES STREQUAL "false")
+set(num_reps "10")
+else()
+set(num_reps "1")
+endif()
+math(EXPR minimum_threshold "${num_reps}*${N}*${C}*${H}*${W}*4/1024/1024")
 message(STATUS "minimum threshold: ${minimum_threshold}")
 while(execution_reads LESS minimum_threshold)
 # Execute program with single execution of evaluated algorithm
-set(num_reps "1")
 set(data_reads "0")
 set(data_writes "0")
 count_traffic(${num_reps} data_reads data_writes)
@@ -96,7 +102,7 @@ endwhile()
 message(STATUS "execution_reads: ${execution_reads}")
 message(STATUS "execution_writes: ${execution_writes}")
 # Substract baseline memory usage from total and conver MiB to bytes
-set(traffic_equation "1024.0*1024.0*(${execution_reads}+${execution_writes})")
+set(traffic_equation "1024.0*1024.0*(${execution_reads}+${execution_writes})/${num_reps}")
 string(STRIP ${traffic_equation} traffic_equation_stripped)
 string(REGEX REPLACE "\n" "" traffic_equation_stripped "${traffic_equation_stripped}")
 # Combine reads and writes to get total traffic and

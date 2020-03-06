@@ -55,10 +55,10 @@ void DNNLLayerNormKernel<inplace>::Init(platform_info &pi, int n, int c, int h, 
   layer_norm_.reset(new dnnl::layer_normalization_forward(layer_norm_pd));
   layer_norm_args_[DNNL_ARG_SRC] = *src_;  
   layer_norm_args_[DNNL_ARG_SCALE_SHIFT] = *scale_shift_;
-  if (inplace == true) {
+  if (inplace == false) {
     layer_norm_args_[DNNL_ARG_DST] = *dst_;  
   } else {
-    layer_norm_args_[DNNL_ARG_DST] = *src;  
+    layer_norm_args_[DNNL_ARG_DST] = *src_;  
   }
 }
 

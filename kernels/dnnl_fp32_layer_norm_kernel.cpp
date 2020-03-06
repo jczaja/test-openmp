@@ -3,15 +3,23 @@
 #include <x86intrin.h>
 #include <kernels/dnnl_fp32_layer_norm_kernel.hpp>
 
-REGISTER_KERNEL(DNNLLayerNormKernel);
+REGISTER_KERNEL(DNNLLayerNormKernel<false>);
+REGISTER_KERNEL_VARIANT(DNNLLayerNormKernel<true>, inplace);
 
-DNNLLayerNormKernel::DNNLLayerNormKernel()
+template<bool inplace>
+DNNLLayerNormKernel<inplace>::DNNLLayerNormKernel()
 {
   // Register kernel
-  kernels[std::string("dnnl_tnc_layer_norm")] = this;
+  // TODO(jczaja): Make a const expr
+  if(inplace == true) {
+    kernels[std::string("dnnl_tnc_layer_norm_inplace")] = this;
+  } else {
+    kernels[std::string("dnnl_tnc_layer_norm")] = this;
+  }
 }
 
-void DNNLLayerNormKernel::Init(platform_info &pi, int n, int c, int h, int w)
+template<bool inplace>
+void DNNLLayerNormKernel<inplace>::Init(platform_info &pi, int n, int c, int h, int w)
 {
   tsc_ghz_ = pi.tsc_ghz;
 
@@ -26,7 +34,10 @@ void DNNLLayerNormKernel::Init(platform_info &pi, int n, int c, int h, int w)
   this->InitializeData(static_cast<float*>(src_->get_data_handle()),n*c*h*w);
 
   // Alocate output
-  dst_.reset(new dnnl::memory(src_md, eng_)); 
+  // for inplace computation , input and output are the same buffer
+  if (inplace == false) {
+    dst_.reset(new dnnl::memory(src_md, eng_)); 
+  } 
 
   // Create computational primitive
   auto layer_norm_desc = dnnl::layer_normalization_forward::desc(dnnl::prop_kind::forward_inference,
@@ -44,10 +55,15 @@ void DNNLLayerNormKernel::Init(platform_info &pi, int n, int c, int h, int w)
   layer_norm_.reset(new dnnl::layer_normalization_forward(layer_norm_pd));
   layer_norm_args_[DNNL_ARG_SRC] = *src_;  
   layer_norm_args_[DNNL_ARG_SCALE_SHIFT] = *scale_shift_;
-  layer_norm_args_[DNNL_ARG_DST] = *dst_;  
+  if (inplace == true) {
+    layer_norm_args_[DNNL_ARG_DST] = *dst_;  
+  } else {
+    layer_norm_args_[DNNL_ARG_DST] = *src;  
+  }
 }
 
-void DNNLLayerNormKernel::InitializeData(float* ptr, unsigned int sized)
+template<bool inplace>
+void DNNLLayerNormKernel<inplace>::InitializeData(float* ptr, unsigned int sized)
 {
   // Init with some random data
   for(unsigned int i=0; i< sized; ++i) {
@@ -55,7 +71,8 @@ void DNNLLayerNormKernel::InitializeData(float* ptr, unsigned int sized)
   }
 }
 
-void DNNLLayerNormKernel::ShowInfo(bool cold_caches)
+template<bool inplace>
+void DNNLLayerNormKernel<inplace>::ShowInfo(bool cold_caches)
 {
   auto src_md = src_->get_desc();
   auto dims = src_md.data.dims;
@@ -71,7 +88,8 @@ void DNNLLayerNormKernel::ShowInfo(bool cold_caches)
   "   channel size: "<< c << std::endl << std::endl;
 }
 
-DNNLLayerNormKernel::~DNNLLayerNormKernel()
+template<bool inplace>
+DNNLLayerNormKernel<inplace>::~DNNLLayerNormKernel()
 {
   if (src_ ) {
    std::cout << "DNNL TNC Layer Norm " << " TNC SRC First element: " << static_cast<float*>(src_->get_data_handle())[0] << std::endl;
@@ -84,7 +102,8 @@ DNNLLayerNormKernel::~DNNLLayerNormKernel()
   }
 }
 
-void DNNLLayerNormKernel::RunSingle(void)
+template<bool inplace>
+void DNNLLayerNormKernel<inplace>::RunSingle(void)
 {
   layer_norm_->execute(s_,layer_norm_args_);
 }

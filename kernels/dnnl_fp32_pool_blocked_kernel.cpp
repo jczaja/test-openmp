@@ -70,7 +70,7 @@ void DNNLPoolBlockedKernel::ShowInfo(bool cold_caches)
   int h = dims[2];
   int w = dims[3];
 
-  std::cout << std::endl << " DNNL Blocked Pool avg " << n << "x" << c << "x" 
+  std::cout << std::endl << " DNNL Blocked Pool Avg " << n << "x" << c << "x" 
          << h << "x" << w << " " << WidthF << "x" << WidthF << 
       " (" << (cold_caches == true ? "cold caches" : "warm caches")  << ")" <<
       std::endl << std::endl <<

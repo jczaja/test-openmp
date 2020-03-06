@@ -85,7 +85,7 @@ template<unsigned int WP>
 DNNLPoolKernel<WP>::~DNNLPoolKernel()
 {
   if (src_ ) {
-   std::cout << "DNNL Pool avg " << 
+   std::cout << "DNNL Pool Avg " << 
        " SRC First element: " << static_cast<float*>(src_->get_data_handle())[0] << std::endl;
   }
   if (dst_ ) {

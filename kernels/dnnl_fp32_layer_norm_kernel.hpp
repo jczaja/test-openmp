@@ -7,6 +7,7 @@
 #include <dnnl.hpp>
 #include <kernels/base_kernel.hpp>
 
+template<bool inplace>
 class DNNLLayerNormKernel : public BaseKernel {
 
  public:

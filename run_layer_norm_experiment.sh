@@ -6,7 +6,7 @@ function layer_norm_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=$4 -DTHREADING=$5
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost

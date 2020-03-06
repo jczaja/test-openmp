@@ -25,6 +25,6 @@ else
   # SINGLE THREAD
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-single build-tnc-layer_norm_warm_caches-single dnnl_tnc_layer_norm false single
   layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-single build-tnc-layer_norm_cold_caches-single dnnl_tnc_layer_norm true single
-  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches-single build-tnc-layer_norm_warm_caches-single dnnl_tnc_layer_norm_inplace false single
-  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches-single build-tnc-layer_norm_cold_caches-single dnnl_tnc_layer_norm_inplace true single
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_warm_caches_inplace-single build-tnc-layer_norm_warm_caches_inplace-single dnnl_tnc_layer_norm_inplace false single
+  layer_norm_experiment $DATA_DIR/dnnl_tnc_layer_norm_cold_caches_inplace-single build-tnc-layer_norm_cold_caches_inplace-single dnnl_tnc_layer_norm_inplace true single
 fi

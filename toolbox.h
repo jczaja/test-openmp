@@ -196,7 +196,7 @@ class ToolBox
 class MemoryTraffic : public ToolBox 
 {
  public:
-  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fdr_(-1), fdw_(-1) {
+  MemoryTraffic(bool clear_cache = true) : ToolBox(clear_cache), fdr_(-1), fdw_(-1), count_data_reads_(0), count_data_writes_(0) {
     memset(&pe_, 0, sizeof(struct perf_event_attr));
     pe_.type = 12; // Desktop data_reads and data_writes
     pe_.config = 1; // 1 - data_reads, 2 - data_writes 
@@ -221,8 +221,18 @@ class MemoryTraffic : public ToolBox
     // caches to make sure no kernel used data is in cache
     if (clear_cache_)
         overwrite_caches();
-    ioctl(fdr_, PERF_EVENT_IOC_RESET, 0);
-    ioctl(fdw_, PERF_EVENT_IOC_RESET, 0);
+
+    auto num_reads = read(fdr_, &count_data_reads_, sizeof(long long));
+    if (num_reads == -1) {
+      throw "ERROR reading : PMU DRAM counters";
+    }
+    std::cout << "data_reads: " << count_data_reads_ << " [64 bytes blocks]" << std::endl;
+    num_reads = read(fdw_, &count_data_writes_, sizeof(long long));
+    if (num_reads == -1) {
+      throw "ERROR reading : PMU DRAM counters";
+    }
+    std::cout << "data_writes: " << count_data_writes_ << " [64 bytes blocks]" << std::endl;
+
     ioctl(fdr_, PERF_EVENT_IOC_ENABLE, 0);
     ioctl(fdw_, PERF_EVENT_IOC_ENABLE, 0);
     return;
@@ -243,8 +253,8 @@ class MemoryTraffic : public ToolBox
     }
     
     // IMC transfer * linesize is rough memory traffic
-    auto data_reads_mib =  (countr)*llc_cache_linesize_/1024/1024;
-    auto data_writes_mib =  (countw)*llc_cache_linesize_/1024/1024;
+    auto data_reads_mib =  (countr - count_data_reads_)*llc_cache_linesize_/1024/1024;
+    auto data_writes_mib =  (countw - count_data_writes_)*llc_cache_linesize_/1024/1024;
 
     std::cout << "MemoryTraffic: " << data_reads_mib << " MiB data_reads" << std::endl;
     std::cout << "MemoryTraffic: " << data_writes_mib << " MiB data_writes" << std::endl;
@@ -264,6 +274,8 @@ class MemoryTraffic : public ToolBox
  protected:
   int fdr_;
   int fdw_;
+  long long count_data_reads_;
+  long long count_data_writes_;
   struct perf_event_attr pe_;
 };
 
@@ -273,7 +285,12 @@ class XeonMemoryTraffic : public MemoryTraffic
  public:
   XeonMemoryTraffic(bool clear_cache = true) : MemoryTraffic(clear_cache), 
    fdr1_(-1), fdw1_(-1), fdr2_(-1), fdw2_(-1),fdr3_(-1), fdw3_(-1),
-    fdr4_(-1), fdw4_(-1),fdr5_(-1), fdw5_(-1) {
+    fdr4_(-1), fdw4_(-1),fdr5_(-1), fdw5_(-1), 
+ count_cas_read0_(0), count_cas_read1_(0), count_cas_read2_(0),
+ count_cas_read3_(0), count_cas_read4_(0), count_cas_read5_(0),
+ count_cas_write0_(0), count_cas_write1_(0), count_cas_write2_(0),
+ count_cas_write3_(0), count_cas_write4_(0), count_cas_write5_(0)
+ {
     memset(&pe_, 0, sizeof(struct perf_event_attr));
     pe_.config = 772; // 772 - cas_count_read, 3076 - cas_count_write
     pe_.disabled = 1;
@@ -309,6 +326,8 @@ class XeonMemoryTraffic : public MemoryTraffic
     fdw4_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
     pe_.type = 19; // Intel Xeon cas_count_write IMC 5
     fdw5_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
+
+
   }
 
   virtual ~XeonMemoryTraffic() {
@@ -345,6 +364,20 @@ class XeonMemoryTraffic : public MemoryTraffic
     ioctl(fdw4_, PERF_EVENT_IOC_RESET, 0);
     ioctl(fdw5_, PERF_EVENT_IOC_RESET, 0);
 
+    count_cas_read0_ = get_pmu_value(fdr_);
+    count_cas_read1_ = get_pmu_value(fdr1_);
+    count_cas_read2_ = get_pmu_value(fdr2_);
+    count_cas_read3_ = get_pmu_value(fdr3_);
+    count_cas_read4_ = get_pmu_value(fdr4_);
+    count_cas_read5_ = get_pmu_value(fdr5_);
+
+    count_cas_write0_ = get_pmu_value(fdw_);
+    count_cas_write1_ = get_pmu_value(fdw1_);
+    count_cas_write2_ = get_pmu_value(fdw2_);
+    count_cas_write3_ = get_pmu_value(fdw3_);
+    count_cas_write4_ = get_pmu_value(fdw4_);
+    count_cas_write5_ = get_pmu_value(fdw5_);
+
     ioctl(fdr_, PERF_EVENT_IOC_ENABLE, 0);
     ioctl(fdr1_, PERF_EVENT_IOC_ENABLE, 0);
     ioctl(fdr2_, PERF_EVENT_IOC_ENABLE, 0);
@@ -377,20 +410,20 @@ class XeonMemoryTraffic : public MemoryTraffic
     ioctl(fdw5_, PERF_EVENT_IOC_DISABLE, 0);
 
     long long countr = 0;
-    countr += get_pmu_value(fdr_);
-    countr += get_pmu_value(fdr1_);
-    countr += get_pmu_value(fdr2_);
-    countr += get_pmu_value(fdr3_);
-    countr += get_pmu_value(fdr4_);
-    countr += get_pmu_value(fdr5_);
+    countr += get_pmu_value(fdr_)  - count_cas_read0_;
+    countr += get_pmu_value(fdr1_) - count_cas_read1_;
+    countr += get_pmu_value(fdr2_) - count_cas_read2_;
+    countr += get_pmu_value(fdr3_) - count_cas_read3_;
+    countr += get_pmu_value(fdr4_) - count_cas_read4_;
+    countr += get_pmu_value(fdr5_) - count_cas_read5_;
 
     long long countw = 0;
-    countw += get_pmu_value(fdw_);
-    countw += get_pmu_value(fdw1_);
-    countw += get_pmu_value(fdw2_);
-    countw += get_pmu_value(fdw3_);
-    countw += get_pmu_value(fdw4_);
-    countw += get_pmu_value(fdw5_);
+    countw += get_pmu_value(fdw_)  - count_cas_write0_ ;
+    countw += get_pmu_value(fdw1_) - count_cas_write1_ ;
+    countw += get_pmu_value(fdw2_) - count_cas_write2_ ;
+    countw += get_pmu_value(fdw3_) - count_cas_write3_ ;
+    countw += get_pmu_value(fdw4_) - count_cas_write4_ ;
+    countw += get_pmu_value(fdw5_) - count_cas_write5_ ;
     
     // IMC transfer * linesize is rough memory traffic
     auto data_reads_mib =  (countr)*llc_cache_linesize_/1024/1024;
@@ -422,6 +455,18 @@ class XeonMemoryTraffic : public MemoryTraffic
       int fdw4_;
       int fdr5_;
       int fdw5_;
+      long long count_cas_read0_;
+      long long count_cas_read1_;
+      long long count_cas_read2_;
+      long long count_cas_read3_;
+      long long count_cas_read4_;
+      long long count_cas_read5_;
+      long long count_cas_write0_;
+      long long count_cas_write1_;
+      long long count_cas_write2_;
+      long long count_cas_write3_;
+      long long count_cas_write4_;
+      long long count_cas_write5_;
 };
 
 

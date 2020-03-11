@@ -44,7 +44,7 @@ class BaseKernel
 
     void RunWarm(int num_reps, bool is_xeon) {
       // Warming up caches
-      for(int n = 0; n < 0; ++n) {
+      for(int n = 0; n < 4; ++n) {
         RunSingle();
       }
 

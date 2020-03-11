@@ -145,8 +145,10 @@ class ToolBox
     }
 
     ~ToolBox() {
-      if (clear_cache_) 
+      if (clear_cache_) {
+          std::cout <<  "Clean[0]: " << buf_[0] << std::endl;
           free(buf_);
+      }
     }
 
   protected:

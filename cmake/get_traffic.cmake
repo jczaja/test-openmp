@@ -75,9 +75,9 @@ set(iter "1")
 # Warm caches we run 10 repetitions
 # and get a mean value as final one
 if(COLD_CACHES STREQUAL "false")
-set(num_reps "20")
+set(num_reps "10")
 else()
-set(num_reps "20")
+set(num_reps "10")
 endif()
 math(EXPR minimum_threshold "${N}*${C}*${H}*${W}*4/1024/1024")
 message(STATUS "minimum threshold: ${minimum_threshold}")

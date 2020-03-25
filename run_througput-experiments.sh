@@ -119,8 +119,8 @@ else
   pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches build-pool-nchw-cold-caches dnnl_nchw_pool_avg true full
   pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches build-pool-blocked-warm-caches dnnl_blocked_pool_avg false full
   pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches build-pool-blocked-cold-caches dnnl_blocked_pool_avg true full
-  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches build-fc-nchw-warm-caches dnnl_nchw_fc false full
   inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_cold_caches build-fc-nchw-cold-caches dnnl_nchw_fc true full
+  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches build-fc-nchw-warm-caches dnnl_nchw_fc false full
 
 
   # ONE SOCKET
@@ -148,8 +148,8 @@ else
   pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches-socket build-pool-nchw-cold-caches-socket dnnl_nchw_pool_avg true socket
   pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches-socket build-pool-blocked-warm-caches-socket dnnl_blocked_pool_avg false socket
   pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches-socket build-pool-blocked-cold-caches-socket dnnl_blocked_pool_avg true socket
-  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches-socket build-fc-nchw-warm-caches-socket dnnl_nchw_fc false socket
   inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_cold_caches-socket build-fc-nchw-cold-caches-socket dnnl_nchw_fc true socket
+  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches-socket build-fc-nchw-warm-caches-socket dnnl_nchw_fc false socket
 
   # SINGLE THREAD
   conv_experiment $DATA_DIR/dnnl_nchw_conv_warm_caches-single build-conv-nchw-warm-caches-single dnnl_nchw_conv false single
@@ -172,10 +172,10 @@ else
   binary_experiment $DATA_DIR/dnnl_nchw_binary_mul_cold_caches-single build-binary-mul-nchw-cold-caches-single dnnl_nchw_binary_mul true single
   binary_experiment $DATA_DIR/dnnl_blocked_binary_mul_warm_caches-single build-binary-mul-blocked-warm-caches-single dnnl_blocked_binary_mul false single
   binary_experiment $DATA_DIR/dnnl_blocked_binary_mul_cold_caches-single build-binary-mul-blocked-cold-caches-single dnnl_blocked_binary_mul true single
-  pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches-single build-pool-nchw-warm-caches-single dnnl_nchw_pool_avg false single
   pool_experiment $DATA_DIR/dnnl_nchw_pool_cold_caches-single build-pool-nchw-cold-caches-single dnnl_nchw_pool_avg true single
-  pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches-single build-pool-blocked-warm-caches-single dnnl_blocked_pool_avg false single
+  pool_experiment $DATA_DIR/dnnl_nchw_pool_warm_caches-single build-pool-nchw-warm-caches-single dnnl_nchw_pool_avg false single
   pool_experiment $DATA_DIR/dnnl_blocked_pool_cold_caches-single build-pool-blocked-cold-caches-single dnnl_blocked_pool_avg true single
-  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches-single build-fc-nchw-warm-caches-single dnnl_nchw_fc false single
+  pool_experiment $DATA_DIR/dnnl_blocked_pool_warm_caches-single build-pool-blocked-warm-caches-single dnnl_blocked_pool_avg false single
   inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_cold_caches-single build-fc-nchw-cold-caches-single dnnl_nchw_fc true single
+  inner_prod_experiment $DATA_DIR/dnnl_nchw_fc_warm_caches-single build-fc-nchw-warm-caches-single dnnl_nchw_fc false single
 fi

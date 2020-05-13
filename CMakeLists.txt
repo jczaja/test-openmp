@@ -195,7 +195,6 @@ DEPENDS test-memory-traffic
 )
 
 # roofline needs memtest and cputest
-# It is also using gnuplot for generation of script
 # it does need memory throughput [GB/sec]
 # and cpu throughput [GFLOPS/sec]
 

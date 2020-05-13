@@ -48,8 +48,6 @@ execute_process(COMMAND awk "BEGIN {print ${expr}}" OUTPUT_VARIABLE __output)
 set(${output} ${__output} PARENT_SCOPE)
 endfunction()
 
-find_package(Gnuplot REQUIRED)
-
 file(STRINGS ${CMAKE_BINARY_DIR}/work.txt WORK)
 file(STRINGS ${CMAKE_BINARY_DIR}/traffic.txt MEMORY_TRAFFIC)
 file(STRINGS ${CMAKE_BINARY_DIR}/memtest-1.txt MEMORY_THROUGHPUT_1)
@@ -80,9 +78,3 @@ string(REGEX REPLACE "\n$" "" HW_INFO_STRIPPED "${HW_INFO}")
 floatexpr("${MEMORY_THROUGHPUT_1}+${MEMORY_THROUGHPUT_2}" MEMORY_THROUGHPUT)
 
 create_gnuplot_script("${CPU_THROUGHPUT}" "${MEMORY_THROUGHPUT}" "${OI_STRIPPED}" "${EXECUTION_TIME_MS_STRIPPED}" "${RUNTIME_PERFORMANCE_STRIPPED}" "${HW_INFO_STRIPPED}" "${ALGO_INFO}")
-# Execute gnuplot using generated script
-execute_process(
-    COMMAND ${GNUPLOT_EXECUTABLE} ${CMAKE_BINARY_DIR}/roofline.plot
-    ERROR_VARIABLE ERROR_VAR 
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-)

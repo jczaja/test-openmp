@@ -1,12 +1,14 @@
 #!/bin/bash
 
+CMAKE_COMMAND=cmake  # change this if needed
+
 # Target_data_dir, local dir, algo, cache, threading
 function conv_experiment()
 {
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=16 -DW=227 -DH=227 -DNF=96 -DHF=3 -DWF=3 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=16 -DW=227 -DH=227 -DNF=96 -DHF=3 -DWF=3 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -21,7 +23,7 @@ function layer_norm_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=dnnl_tnc_layer_norm -DN=256 -DC=768 -DW=4 -DH=32 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -35,7 +37,7 @@ function eltwise_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -49,7 +51,7 @@ function binary_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -63,7 +65,7 @@ function pool_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DWF=5 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=96 -DW=55 -DH=55 -DWF=5 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost
@@ -77,7 +79,7 @@ function inner_prod_experiment()
   mkdir -p $1
   mkdir $2
   pushd $2
-  cmake ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=4096 -DW=1 -DH=1 -DNF=1000 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
+  $CMAKE_COMMAND ../ -DCMAKE_BUILD_TYPE=Release -DALGO=$3 -DN=256 -DC=4096 -DW=1 -DH=1 -DNF=1000 -DCOLD_CACHES=$4 -DTHREADING=$5 -DCHARTS=relative
   sudo make enable_turbo_boost
   make -j 4 test-openmp-gomp
   sudo make disable_turbo_boost

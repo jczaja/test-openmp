@@ -301,32 +301,32 @@ class XeonMemoryTraffic : public MemoryTraffic
     pe_.exclude_hv = 0;     // Include hypervisor
 
     // Intel Xeon Read IMC <0-5> read counters
-    pe_.type = 14; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
+    pe_.type = 13; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
     fdr_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 15; // Intel Xeon cas_count_read IMC 1
+    pe_.type = 14; // Intel Xeon cas_count_read IMC 1
     fdr1_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 16; // Intel Xeon cas_count_read IMC 2
+    pe_.type = 15; // Intel Xeon cas_count_read IMC 2
     fdr2_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 17; // Intel Xeon cas_count_read IMC 3
+    pe_.type = 16; // Intel Xeon cas_count_read IMC 3
     fdr3_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 18; // Intel Xeon cas_count_read IMC 4
+    pe_.type = 17; // Intel Xeon cas_count_read IMC 4
     fdr4_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 19; // Intel Xeon cas_count_read IMC 5
+    pe_.type = 18; // Intel Xeon cas_count_read IMC 5
     fdr5_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
 
     // Now modify config to have data_writes counted    
     pe_.config = 3076;
-    pe_.type = 14; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
+    pe_.type = 13; // Intel Xeon cas_count_read and cas_count_write goes from 14 to 19
     fdw_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 15; // Intel Xeon cas_count_write IMC 1
+    pe_.type = 14; // Intel Xeon cas_count_write IMC 1
     fdw1_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 16; // Intel Xeon cas_count_write IMC 2
+    pe_.type = 15; // Intel Xeon cas_count_write IMC 2
     fdw2_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 17; // Intel Xeon cas_count_write IMC 3
+    pe_.type = 16; // Intel Xeon cas_count_write IMC 3
     fdw3_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 18; // Intel Xeon cas_count_write IMC 4
+    pe_.type = 17; // Intel Xeon cas_count_write IMC 4
     fdw4_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
-    pe_.type = 19; // Intel Xeon cas_count_write IMC 5
+    pe_.type = 18; // Intel Xeon cas_count_write IMC 5
     fdw5_ = perf_event_open(&pe_, -1, 0, -1, PERF_FLAG_FD_CLOEXEC);
 
 

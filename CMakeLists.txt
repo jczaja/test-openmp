@@ -16,22 +16,26 @@ find_path(GFLAGS_INCLUDES NAMES gflags.h PATHS /usr/include/gflags/)
 message("GFLAGS INCLUDES: ${GFLAGS_INCLUDES}")
 include_directories(SYSTEM ${GFLAGS_INCLUDES})
 
-find_package(OpenMP)
-if(OPENMP_FOUND)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set(OpenMP_SIMD_Test_Source
+# testing openmp program
+set(OpenMP_Test_Source
 " int main()
 {
   const int asize = 8;
   int a[asize] = {1,2,3,4,5,6,7,8};
   int sum = a[0];
-# pragma omp simd reduction(+:sum)
+# pragma omp parallel for reduction(+:sum)
   for (int i=1; i<asize; ++i) {
 		sum += a[i];
 	}
   return 0;
 }")
 file(WRITE ${CMAKE_BINARY_DIR}/test_openmp.cpp "${OpenMP_SIMD_Test_Source}")
+
+if(NOT DEFINED INTEL_OMP_DIR)
+
+find_package(OpenMP)
+if(OPENMP_FOUND)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 try_compile(COMPILE_SUCCEEDED ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_openmp.cpp COMPILE_DEFINITIONS "-fopenmp -Werror -Wunknown-pragmas")
 
 if(COMPILE_SUCCEEDED)
@@ -40,6 +44,19 @@ endif()
 else()
 message("OpenMP support missing in compiler")
 endif()
+
+else()  # Here Intel openmp section
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
+try_compile(COMPILE_SUCCEEDED ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_openmp.cpp COMPILE_DEFINITIONS "-fopenmp -Werror -Wunknown-pragmas" LINK_OPTIONS "-Wl,--as-needed -L${INTEL_OMP_DIR}" LINK_LIBRAIRES "iomp5")
+
+link_directories(${INTEL_OMPDIR})
+add_link_options("-Wl,--as-needed")
+
+endif()
+
+
+
+
 
 find_package(Git)
 

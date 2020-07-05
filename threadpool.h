@@ -17,7 +17,7 @@ public:
 		slice = std::max(slice, Index(1));
  
 		// [Helper] Inner loop
-		auto launchRange = [&func] (int k1, int k2) {
+		auto launchRange = [&func] (unsigned int k1, unsigned int k2) {
 			for (Index k = k1; k < k2; k++) {
 				func(k);
 			}

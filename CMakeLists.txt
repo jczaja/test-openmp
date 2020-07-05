@@ -29,7 +29,7 @@ set(OpenMP_Test_Source
 	}
   return 0;
 }")
-file(WRITE ${CMAKE_BINARY_DIR}/test_openmp.cpp "${OpenMP_SIMD_Test_Source}")
+file(WRITE ${CMAKE_BINARY_DIR}/test_openmp.cpp "${OpenMP_Test_Source}")
 
 if(NOT DEFINED INTEL_OMP_DIR)
 
@@ -49,8 +49,9 @@ else()  # Here Intel openmp section
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp ")
 try_compile(COMPILE_SUCCEEDED ${CMAKE_BINARY_DIR} ${CMAKE_BINARY_DIR}/test_openmp.cpp COMPILE_DEFINITIONS "-fopenmp -Werror -Wunknown-pragmas" LINK_OPTIONS "-Wl,--as-needed -L${INTEL_OMP_DIR}" LINK_LIBRAIRES "iomp5")
 
-link_directories(${INTEL_OMPDIR})
-add_link_options("-Wl,--as-needed")
+link_directories(${INTEL_OMP_DIR})
+add_link_options(-Wl,--as-needed)
+link_libraries(iomp5)
 
 endif()
 

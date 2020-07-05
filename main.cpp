@@ -380,7 +380,7 @@ void run_cpu_test( platform_info& pi)
   #ifdef OMP_EMUL
   ThreadPool::ParallelFor((unsigned int)0, (unsigned int)(pi.num_total_phys_cores*num_iterations), [&] (int i) {
 		bench_code();
-		});
+		}, pi.num_total_phys_cores);
   #else
   #pragma omp parallel for num_threads(pi.num_total_phys_cores) 
   for(unsigned int i=0; i< pi.num_total_phys_cores*num_iterations; ++i) {

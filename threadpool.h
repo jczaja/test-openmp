@@ -7,7 +7,7 @@ class ThreadPool {
 public:
  
 	template<typename Index, typename Callable>
-	static void ParallelFor(Index start, Index end, Callable func, int num_threads) {
+	static void ParallelFor(Index start, Index end, Callable func, unsigned int num_threads) {
 		// Estimate number of threads in the pool
 		const static unsigned nb_threads = num_threads;
  

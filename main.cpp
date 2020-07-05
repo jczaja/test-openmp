@@ -24,6 +24,7 @@
 #include "xbyak/xbyak.h"
 #include "xbyak/xbyak_util.h"
 #include "toolbox.h"
+#include "threadpool.h"
 #include "kernels/base_kernel.hpp"
 
 DEFINE_int32(num_reps, 1,
@@ -376,10 +377,16 @@ void run_cpu_test( platform_info& pi)
   auto rt = Runtime(pi.tsc_ghz, false);
 
   rt.Start();
+  #ifdef OMP_EMUL
+  ThreadPool::ParallelFor((unsigned int)0, (unsigned int)(pi.num_total_phys_cores*num_iterations), [&] (int i) {
+		bench_code();
+		});
+  #else
   #pragma omp parallel for num_threads(pi.num_total_phys_cores) 
   for(unsigned int i=0; i< pi.num_total_phys_cores*num_iterations; ++i) {
       bench_code();
   }
+  #endif
   rt.Stop();
 
   // How much FLOPS is executed

@@ -16,6 +16,11 @@ find_path(GFLAGS_INCLUDES NAMES gflags.h PATHS /usr/include/gflags/)
 message("GFLAGS INCLUDES: ${GFLAGS_INCLUDES}")
 include_directories(SYSTEM ${GFLAGS_INCLUDES})
 
+if(DEFINED OMP_EMUL)
+add_definitions(-DOMP_EMUL)
+endif()
+
+
 # testing openmp program
 set(OpenMP_Test_Source
 " int main()

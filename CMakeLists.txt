@@ -149,8 +149,12 @@ if (NOT DEFINED CHARTS)
 set(CHARTS "absolute")
 endif()
 
+if (NOT DEFINED UNCORE_IMC_0_TYPE)
+set(UNCORE_IMC_0_TYPE "11")
+endif()
+
 ###################################
-message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES} THREADING=${THREADING} CHARTS=${CHARTS}")
+message(STATUS "N=${N} C=${C} H=${H} W=${W} NF=${NF} HF=${HF} WF=${WF} ALGO=${ALGO} COLD_CACHES=${COLD_CACHES} THREADING=${THREADING} CHARTS=${CHARTS} UNCORE_IMC_0_TYPE=${UNCORE_IMC_0_TYPE}")
 
 add_custom_target(
 work
@@ -172,7 +176,7 @@ ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp)
 set_target_properties(assembly_dump PROPERTIES PREFIX "")
 set_target_properties(assembly_dump PROPERTIES OUTPUT_NAME "assembly_dump.asm")
 set_target_properties(assembly_dump PROPERTIES SUFFIX "")
-set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
+set_target_properties(assembly_dump PROPERTIES COMPILE_FLAGS "-DUNCORE_IMC_0_TYPE=${UNCORE_IMC_0_TYPE} -DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DGENERATE_ASSEMBLY -S -masm=intel -fopt-info-vec-optimized")
 
 add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kernel.cpp
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_fc_kernel.cpp"
@@ -187,7 +191,7 @@ add_executable(test-openmp-gomp ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CUR
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
+set_target_properties(test-openmp-gomp PROPERTIES COMPILE_FLAGS "-DUNCORE_IMC_0_TYPE=${UNCORE_IMC_0_TYPE} -DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DRUNTIME_TEST")
 target_link_libraries(test-openmp-gomp m ${GFLAGS_LIB} dnnl)
 
 # Memory traffic counting build
@@ -204,7 +208,7 @@ add_executable(test-memory-traffic ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/kernels/dnnl_fp32_pool_blocked_kernel.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/xbyak/xbyak/xbyak.h") 
-set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
+set_target_properties(test-memory-traffic PROPERTIES COMPILE_FLAGS "-DUNCORE_IMC_0_TYPE=${UNCORE_IMC_0_TYPE} -DNumF=${NF} -DHeightF=${HF} -DWidthF=${WF} -DMEMORY_TRAFFIC_COUNT")
 target_link_libraries(test-memory-traffic m ${GFLAGS_LIB} dnnl)
 
 
